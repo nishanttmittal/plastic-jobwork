@@ -5,7 +5,7 @@
 import { useMemo } from 'react'
 import { usePlastic } from '../PlasticContext'
 import { Card, FieldLabel } from '../../../core/ui'
-import { todayStr, fmtNum } from '../../../core/utils/format'
+import { todayStr, daysAgoStr, fmtNum } from '../../../core/utils/format'
 import { productMaterialCost } from '../logic/costing'
 import { allMolderBalances } from '../logic/reconcile'
 import { molderHisab } from '../logic/hisab'
@@ -40,6 +40,27 @@ export default function Dashboard({ owner }) {
     return map
   }, [production.list])
 
+  // Last 15 days — raw material in/out and final product (no money; manager-safe).
+  const since15 = daysAgoStr(15)
+  const last15 = useMemo(() => {
+    const iss = issues.list.filter(i => !i.voided && i.date >= since15)
+    const prod = production.list.filter(e => !e.voided && e.date >= since15)
+    const rawOut = {
+      compoundKg: iss.reduce((s, i) => s + (Number(i.compoundKg) || 0), 0),
+      mbKg: iss.reduce((s, i) => s + (Number(i.mbKg) || 0), 0),
+      nuts: iss.reduce((s, i) => s + (Number(i.nutQty) || 0), 0),
+    }
+    const rawIn = {
+      regrindKg: prod.reduce((s, e) => s + (Number(e.runnerKg) || 0) + (Number(e.rejectsKg) || 0), 0),
+      burntKg: prod.reduce((s, e) => s + (Number(e.burntKg) || 0), 0),
+    }
+    const prodMap = {}
+    for (const e of prod) for (const it of (e.items || [])) {
+      prodMap[it.productId] = (prodMap[it.productId] || 0) + (Number(it.pieces) || 0)
+    }
+    return { rawOut, rawIn, prodMap }
+  }, [issues.list, production.list, since15])
+
   const balances = useMemo(() => allMolderBalances(masters, data), [masters, production.list, issues.list])
 
   // Make-vs-buy (monthly basis, scaled from this month's output).
@@ -63,6 +84,31 @@ export default function Dashboard({ owner }) {
           <div className="text-xs text-slate-500 mt-1">Pieces this month</div>
         </Card>
       </div>
+
+      {/* Last 15 days — RAW MATERIAL (in/out) */}
+      <Card className="p-4">
+        <FieldLabel>Raw material — last 15 days</FieldLabel>
+        <div className="mt-2 text-sm space-y-1">
+          <div className="text-xs font-bold text-slate-500 uppercase mt-1">Sent to molders (OUT)</div>
+          <Row label="Compound" val={`${fmtNum(last15.rawOut.compoundKg)} kg`} />
+          <Row label="Masterbatch" val={`${fmtNum(last15.rawOut.mbKg)} kg`} />
+          <Row label="Nuts" val={fmtNum(last15.rawOut.nuts)} />
+          <div className="text-xs font-bold text-slate-500 uppercase mt-2">Returned (IN)</div>
+          <Row label="Regrind (runner + rejects)" val={`${fmtNum(last15.rawIn.regrindKg)} kg`} />
+          <Row label="Burnt loss" val={`${fmtNum(last15.rawIn.burntKg)} kg`} />
+        </div>
+      </Card>
+
+      {/* Last 15 days — FINAL PRODUCT */}
+      <Card className="p-4">
+        <FieldLabel>Final product — last 15 days</FieldLabel>
+        <div className="mt-2 text-sm space-y-1">
+          {Object.keys(last15.prodMap).length === 0 && <p className="text-slate-400">No production in the last 15 days.</p>}
+          {products.filter(p => last15.prodMap[p.id]).map(p => (
+            <Row key={p.id} label={p.name} val={`${fmtNum(last15.prodMap[p.id])} pcs`} />
+          ))}
+        </div>
+      </Card>
 
       {/* Cost per piece (owner only — managers don't see money) */}
       {owner && (
