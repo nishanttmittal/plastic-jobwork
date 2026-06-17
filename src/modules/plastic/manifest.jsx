@@ -46,7 +46,7 @@ export const plasticModule = {
     { key: 'dashboard',  title: 'Dashboard',     desc: 'Cost per piece, balances & alerts', icon: '📊', color: 'from-teal-600 to-teal-700',       roles: ['manager', 'owner'], Component: Dashboard },
     { key: 'production', title: 'New Production', desc: 'Record a shift’s output',        icon: '➕', color: 'from-emerald-600 to-emerald-700', roles: ['manager', 'owner'], Component: NewProduction },
     { key: 'issue',      title: 'Issue Material', desc: 'Give compound / nuts to a molder',   icon: '📦', color: 'from-cyan-600 to-cyan-700',       roles: ['manager', 'owner'], Component: IssueCompound },
-    { key: 'hisab',      title: 'Molder Hisab',  desc: 'Dues, advances, balance, PDF',        icon: '📒', color: 'from-violet-600 to-violet-700',   roles: ['manager', 'owner'], Component: Hisab },
+    { key: 'hisab',      title: 'Molder Hisab',  desc: 'Dues, advances, balance, PDF',        icon: '📒', color: 'from-violet-600 to-violet-700',   roles: ['owner'], Component: Hisab },
     { key: 'masters',    title: 'Masters & Rates', desc: 'Compounds, nuts, molders, products', icon: '🗂️', color: 'from-amber-500 to-amber-600',    roles: ['owner'], Component: Masters },
     { key: 'admin',      title: 'Admin',         desc: 'Backup, logs, void & reset',          icon: '⚙️', color: 'from-slate-600 to-slate-700',     roles: ['owner'], Component: Admin },
   ],

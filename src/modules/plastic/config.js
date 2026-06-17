@@ -12,8 +12,10 @@
 
 export const APP_TITLE = 'Plastic Job Work'
 
-/** Admin (owner) emails — only relevant once cloud mode is enabled. */
-export const OWNER_EMAILS = ['nspenterprises24@gmail.com', 'info@unicoproductsindia.com']
+/** Admin (owner) bootstrap email — MUST match the shared firestore.rules
+ * bootstrapOwner and the standing rule (owner signs in with THIS account, not
+ * the info@ billing login). Can never be locked out. */
+export const OWNER_EMAILS = ['nspenterprises24@gmail.com']
 export const ROLES = { owner: 'owner', manager: 'manager' }
 
 /** Admin password gate (local mode) — matches the other UNICO factory apps. */

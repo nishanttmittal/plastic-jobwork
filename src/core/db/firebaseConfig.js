@@ -24,8 +24,8 @@ export const firebaseConfig = {
   appId:             '1:367786260524:web:ae49d5da0ef1a71a9e3989',
 }
 
-/** Phase-1 switch — keep the app on local storage until cloud is approved. */
-export const PHASE1_LOCAL_ONLY = true
+/** Cloud enabled 2026-06-16 (owner approved: Manager/Admin login like welder/plating). */
+export const PHASE1_LOCAL_ONLY = false
 
 /** True only when real values are present AND cloud mode is enabled. */
 export const isFirebaseConfigured =

@@ -14,14 +14,16 @@ import {
 } from './data'
 import { formatEntryNo, entryCosting } from './logic/costing'
 import { isFirebaseConfigured } from '../../core/db/firebaseConfig'
+import { FirestoreProvider } from './FirestoreProvider'
 
 const Ctx = createContext(null)
 export { Ctx as PlasticCtx }
 
-/** Backend selector. Phase 1 = local only (cloud provider added later). */
+/** Backend selector: cloud (Firestore) when configured, else local storage. */
 export function PlasticProvider({ children }) {
-  // When cloud mode is enabled later, branch to a FirestoreProvider here.
-  return <LocalPlasticProvider>{children}</LocalPlasticProvider>
+  return isFirebaseConfigured
+    ? <FirestoreProvider>{children}</FirestoreProvider>
+    : <LocalPlasticProvider>{children}</LocalPlasticProvider>
 }
 
 function LocalPlasticProvider({ children }) {

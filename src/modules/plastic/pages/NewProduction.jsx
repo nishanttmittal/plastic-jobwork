@@ -11,7 +11,7 @@ import { todayStr, fmtNum } from '../../../core/utils/format'
 import { entryCosting, byId } from '../logic/costing'
 import { QUICK_QTYS } from '../config'
 
-export default function NewProduction() {
+export default function NewProduction({ owner }) {
   const { molders, products, masters, createEntry } = usePlastic()
   const { msg, show } = useToast()
 
@@ -132,7 +132,8 @@ export default function NewProduction() {
         )}
       </Card>
 
-      {/* Live cost preview */}
+      {/* Live cost preview (owner only — managers don't see money) */}
+      {owner && (
       <Card className="p-4 bg-teal-50 border border-teal-200">
         <FieldLabel className="text-teal-700">Cost preview (live)</FieldLabel>
         <div className="mt-2 space-y-2">
@@ -152,6 +153,7 @@ export default function NewProduction() {
           </div>
         </div>
       </Card>
+      )}
 
       <textarea value={note} onChange={e => setNote(e.target.value)} placeholder="Note (optional)"
         className="w-full border-2 border-slate-200 rounded-2xl px-4 py-3 text-base" rows={2} />

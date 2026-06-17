@@ -11,7 +11,7 @@ import { allMolderBalances } from '../logic/reconcile'
 import { molderHisab } from '../logic/hisab'
 import { MACHINE_ECONOMICS } from '../config'
 
-export default function Dashboard() {
+export default function Dashboard({ owner }) {
   const { production, issues, payments, masters, products } = usePlastic()
 
   const data = { production: production.list, issues: issues.list, payments: payments.list }
@@ -64,7 +64,8 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* Cost per piece */}
+      {/* Cost per piece (owner only — managers don't see money) */}
+      {owner && (
       <Card className="p-4">
         <FieldLabel>Cost per piece</FieldLabel>
         <div className="mt-2 space-y-2">
@@ -85,6 +86,7 @@ export default function Dashboard() {
           <p className="text-xs text-slate-400 pt-1">Full cost includes the job-work share, which depends on shift output. Shown value = last actual.</p>
         </div>
       </Card>
+      )}
 
       {/* Molder balances */}
       <Card className="p-4">
@@ -105,7 +107,7 @@ export default function Dashboard() {
                   <Row label="Regrind back" val={`${fmtNum(b.regrindKg)} kg`} />
                   <Row label="Burnt loss" val={`${fmtNum(b.burntKg)} kg`} />
                   <Row label="Pieces" val={fmtNum(b.goodPieces)} />
-                  <Row label={h.balance >= 0 ? 'We owe' : 'Owes us'} val={`₹${fmtNum(Math.abs(h.balance))}`} bold />
+                  {owner && <Row label={h.balance >= 0 ? 'We owe' : 'Owes us'} val={`₹${fmtNum(Math.abs(h.balance))}`} bold />}
                 </div>
               </div>
             )
@@ -113,7 +115,8 @@ export default function Dashboard() {
         </div>
       </Card>
 
-      {/* Make vs buy */}
+      {/* Make vs buy (owner only) */}
+      {owner && (
       <Card className={`p-4 ${buyVerdict === 'buy' ? 'bg-emerald-50 border border-emerald-200' : 'bg-slate-50'}`}>
         <FieldLabel>Buy the machine? (break-even)</FieldLabel>
         {inhousePerPiece == null ? (
@@ -131,6 +134,7 @@ export default function Dashboard() {
           </div>
         )}
       </Card>
+      )}
     </div>
   )
 }

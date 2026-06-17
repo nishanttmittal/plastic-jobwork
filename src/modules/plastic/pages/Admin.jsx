@@ -4,9 +4,9 @@
  */
 import { useState } from 'react'
 import { usePlastic } from '../PlasticContext'
-import { Button, Card, FieldLabel } from '../../../core/ui'
+import { Button, Card, FieldLabel, Select } from '../../../core/ui'
 import { fmtDate, fmtNum } from '../../../core/utils/format'
-import { ADMIN_PASSWORD } from '../config'
+import { ADMIN_PASSWORD, OWNER_EMAILS } from '../config'
 
 export default function Admin() {
   const ctx = usePlastic()
@@ -93,6 +93,8 @@ export default function Admin() {
         </label>
       </Card>
 
+      <Users />
+
       <Card className="p-4">
         <FieldLabel>Recent production (void if wrong)</FieldLabel>
         <div className="mt-2 divide-y">
@@ -127,5 +129,56 @@ export default function Admin() {
         <Button variant="danger" className="w-full mt-2" onClick={resetAll}>Clear all transactions</Button>
       </Card>
     </div>
+  )
+}
+
+/** Users & Access — owner grants Manager (or Admin) logins by email. */
+function Users() {
+  const { users, log } = usePlastic()
+  const [email, setEmail] = useState('')
+  const [name, setName] = useState('')
+  const [role, setRole] = useState('manager')
+
+  const add = () => {
+    const e = email.trim().toLowerCase()
+    if (!e || !e.includes('@')) return
+    // doc id = email so the security rules can resolve the role directly.
+    users.insert({ id: e, email: e, name: name.trim(), role, active: true })
+    log('USER_ADD', `${e} as ${role}`, 'admin')
+    setEmail(''); setName('')
+  }
+  const toggle = (u) => { users.update(u.id, { active: !(u.active !== false) }); log('USER_TOGGLE', `${u.email} → ${u.active !== false ? 'disabled' : 'active'}`, 'admin') }
+  const del = (u) => { if (confirm(`Remove ${u.email}?`)) { users.remove(u.id); log('USER_REMOVE', u.email, 'admin') } }
+
+  return (
+    <Card className="p-4">
+      <FieldLabel>Users & Access</FieldLabel>
+      <p className="text-xs text-slate-400 mt-1">Owner ({OWNER_EMAILS[0]}) always has full access. Add a Manager so they can record material sent &amp; received.</p>
+      <div className="mt-2 divide-y">
+        {users.list.length === 0 && <p className="text-sm text-slate-400 py-2">No managers added yet.</p>}
+        {users.list.map(u => (
+          <div key={u.id} className="flex items-center justify-between py-2 text-sm">
+            <span className={u.active === false ? 'text-slate-400 line-through' : 'text-slate-700'}>
+              {u.email} · <b>{u.role}</b>{u.name ? ` · ${u.name}` : ''}
+            </span>
+            <span className="flex gap-2">
+              <button onClick={() => toggle(u)} className="text-amber-600 text-xs font-bold">{u.active === false ? 'Enable' : 'Disable'}</button>
+              <button onClick={() => del(u)} className="text-red-500 text-xs font-bold">Remove</button>
+            </span>
+          </div>
+        ))}
+      </div>
+      <div className="mt-3 space-y-2 border-t pt-3">
+        <input value={email} onChange={e => setEmail(e.target.value)} placeholder="manager@gmail.com (their Google login)"
+          className="w-full border-2 border-slate-300 rounded-xl px-3 py-2 text-sm" />
+        <input value={name} onChange={e => setName(e.target.value)} placeholder="Name (optional)"
+          className="w-full border-2 border-slate-200 rounded-xl px-3 py-2 text-sm" />
+        <div className="flex gap-2">
+          <Select options={[{ value: 'manager', label: 'Manager (material in/out)' }, { value: 'owner', label: 'Admin (full)' }]}
+            value={role} onChange={e => setRole(e.target.value)} className="!py-2 !text-sm flex-1" />
+          <Button size="sm" onClick={add}>Add</Button>
+        </div>
+      </div>
+    </Card>
   )
 }
