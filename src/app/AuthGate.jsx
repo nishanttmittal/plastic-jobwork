@@ -27,8 +27,8 @@ function Screen({ children }) {
   )
 }
 
-export default function AuthGate({ title = 'Plating Job Work', icon = '🏭', children }) {
-  const { users } = useJobWork()
+export default function AuthGate({ title = 'Plastic Job Work', icon = '🏭', children }) {
+  const { users } = usePlastic()
   const [user, setUser] = useState(undefined) // undefined = loading
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
