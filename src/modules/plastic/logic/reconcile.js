@@ -60,12 +60,25 @@ export function molderBalance(molderId, data) {
   const balanceKg = round2(issuedKg - accountedKg)
   const regrindKg = round2(runnerKg + rejectsKg) // reusable returned stock
 
+  // Expected pieces from the compound issued (yield estimate): for each issue
+  // that names a product, kg ÷ grams-per-piece. Produced pieces draw it down.
+  let expectedPieces = 0
+  for (const i of issues) {
+    const p = byId(products, i.productId)
+    const g = Number(p?.gPerPiece) || 0
+    if (g > 0) expectedPieces += ((Number(i.compoundKg) || 0) * 1000) / g
+  }
+  expectedPieces = Math.round(expectedPieces)
+  const producedPieces = goodPieces
+  const pendingPieces = Math.max(0, expectedPieces - producedPieces)
+
   return {
     molderId,
     issuedKg, mbIssuedKg,
     plasticInProductsKg, runnerKg, rejectsKg, burntKg,
     accountedKg, balanceKg, regrindKg,
     goodPieces,
+    expectedPieces, producedPieces, pendingPieces,
     nutsIssued, nutsUsed, nutBalance: nutsIssued - nutsUsed,
     flag: balanceKg < -RECON_TOLERANCE_KG,
   }

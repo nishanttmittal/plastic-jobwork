@@ -40,6 +40,8 @@ export const issueSchema = [
   field({ name: 'molderId',   label: 'Molder',     type: 'text',   default: '', required: true }),
   field({ name: 'compoundId', label: 'Compound',   type: 'text',   default: '' }),
   field({ name: 'compoundKg', label: 'Compound (kg)', type: 'number', default: 0 }),
+  // which product this compound is meant for — used to estimate expected pieces
+  field({ name: 'productId',  label: 'For product', type: 'text',   default: '' }),
   field({ name: 'mbId',       label: 'Masterbatch', type: 'text',  default: '' }),
   field({ name: 'mbKg',       label: 'Masterbatch (kg)', type: 'number', default: 0 }),
   field({ name: 'insertId',   label: 'Nut/Insert', type: 'text',   default: '' }),

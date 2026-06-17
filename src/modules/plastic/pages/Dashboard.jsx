@@ -155,6 +155,18 @@ export default function Dashboard({ owner }) {
                   <Row label="Pieces" val={fmtNum(b.goodPieces)} />
                   {owner && <Row label={h.balance >= 0 ? 'We owe' : 'Owes us'} val={`₹${fmtNum(Math.abs(h.balance))}`} bold />}
                 </div>
+                {b.expectedPieces > 0 && (
+                  <div className="mt-3">
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className="text-slate-500">Yield: {fmtNum(b.producedPieces)} made / ≈{fmtNum(b.expectedPieces)} expected</span>
+                      <span className="font-bold text-teal-700">≈{fmtNum(b.pendingPieces)} pending</span>
+                    </div>
+                    <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                      <div className="h-full bg-teal-500 rounded-full"
+                        style={{ width: `${Math.min(100, Math.round((b.producedPieces / b.expectedPieces) * 100))}%` }} />
+                    </div>
+                  </div>
+                )}
               </div>
             )
           })}

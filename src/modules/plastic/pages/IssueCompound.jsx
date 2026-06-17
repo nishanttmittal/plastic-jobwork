@@ -12,13 +12,14 @@ import { molderBalance } from '../logic/reconcile'
 import { byId } from '../logic/costing'
 
 export default function IssueCompound() {
-  const { molders, compounds, masterbatch, inserts, masters, issues, log } = usePlastic()
+  const { molders, compounds, masterbatch, inserts, masters, issues, production, log } = usePlastic()
   const { msg, show } = useToast()
 
   const [date, setDate] = useState(todayStr())
   const [molderId, setMolderId] = useState(molders[0]?.id || '')
   const [compoundId, setCompoundId] = useState(compounds[0]?.id || '')
   const [compoundKg, setCompoundKg] = useState('')
+  const [productId, setProductId] = useState(masters.products.find(p => (Number(p.gPerPiece) || 0) > 0)?.id || '')
   const [mbId, setMbId] = useState('')
   const [mbKg, setMbKg] = useState('')
   const [insertId, setInsertId] = useState('')
@@ -29,8 +30,14 @@ export default function IssueCompound() {
   const compoundOpts = compounds.map(c => ({ value: c.id, label: `${c.name} · ₹${c.rate}/kg` }))
   const mbOpts = [{ value: '', label: '— none —' }, ...masterbatch.map(m => ({ value: m.id, label: m.name }))]
   const nutOpts = [{ value: '', label: '— none —' }, ...inserts.map(i => ({ value: i.id, label: `${i.name} · ₹${i.rate}` }))]
+  const productOpts = masters.products.map(p => ({ value: p.id, label: p.name }))
 
-  const bal = molderId ? molderBalance(molderId, { issues: issues.list, production: [], products: masters.products }) : null
+  // Live yield estimate: how many pieces this compound should make.
+  const selProduct = byId(masters.products, productId)
+  const gpp = Number(selProduct?.gPerPiece) || 0
+  const expectedFromThis = gpp > 0 ? Math.round(((Number(compoundKg) || 0) * 1000) / gpp) : 0
+
+  const bal = molderId ? molderBalance(molderId, { issues: issues.list, production: production.list, products: masters.products }) : null
 
   const canSave = molderId && ((Number(compoundKg) || 0) > 0 || (Number(nutQty) || 0) > 0 || (Number(mbKg) || 0) > 0)
 
@@ -38,7 +45,7 @@ export default function IssueCompound() {
     if (!canSave) { show('Enter a quantity to issue', 2500); return }
     issues.insert({
       date, molderId,
-      compoundId, compoundKg: Number(compoundKg) || 0,
+      compoundId, compoundKg: Number(compoundKg) || 0, productId,
       mbId, mbKg: Number(mbKg) || 0,
       insertId, nutQty: Number(nutQty) || 0,
       note, voided: false, createdAt: new Date().toISOString(),
@@ -71,6 +78,16 @@ export default function IssueCompound() {
           <span className="text-xs text-slate-500">Compound weight (kg)</span>
           <NumberInput value={compoundKg} onChange={e => setCompoundKg(e.target.value)} placeholder="0" className="mt-1" />
         </div>
+        <div>
+          <span className="text-xs text-slate-500">For product (to estimate pieces)</span>
+          <Select options={productOpts} value={productId} onChange={e => setProductId(e.target.value)} className="mt-1" />
+        </div>
+        {expectedFromThis > 0 && (
+          <div className="bg-teal-50 border border-teal-200 rounded-xl p-3 text-center">
+            <div className="text-3xl font-bold text-teal-800">≈ {fmtNum(expectedFromThis)} pcs</div>
+            <div className="text-xs text-slate-500 mt-0.5">expected from {fmtNum(compoundKg)} kg of {selProduct?.name}</div>
+          </div>
+        )}
       </Card>
 
       <Card className="p-4 space-y-3">
@@ -101,6 +118,10 @@ export default function IssueCompound() {
           <div className="flex justify-between text-sm">
             <span className="text-slate-600">Nuts balance</span>
             <span className="font-mono font-bold">{fmtNum(bal.nutBalance)}</span>
+          </div>
+          <div className="flex justify-between text-sm border-t pt-2 mt-1">
+            <span className="text-slate-600">Pending pieces (approx)</span>
+            <span className="font-mono font-bold text-teal-700">{fmtNum(bal.pendingPieces)}</span>
           </div>
         </Card>
       )}
