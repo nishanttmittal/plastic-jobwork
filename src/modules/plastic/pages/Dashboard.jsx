@@ -69,11 +69,18 @@ export default function Dashboard({ owner }) {
     const byReason = {}
     for (const e of prod) for (const it of (e.items || [])) {
       good += Number(it.pieces) || 0
-      const r = Number(it.rejects) || 0
-      if (r > 0) {
-        rej += r
-        const key = it.rejectReason || ''
-        byReason[key] = (byReason[key] || 0) + r
+      // New records carry rejectRows [{reason, qty}]; old records have a single
+      // rejectReason + total rejects. Normalise both into reason rows.
+      const rows = Array.isArray(it.rejectRows) && it.rejectRows.length
+        ? it.rejectRows
+        : [{ reason: it.rejectReason || '', qty: Number(it.rejects) || 0 }]
+      for (const row of rows) {
+        const q = Number(row.qty) || 0
+        if (q > 0) {
+          rej += q
+          const key = row.reason || ''
+          byReason[key] = (byReason[key] || 0) + q
+        }
       }
     }
     const total = good + rej
