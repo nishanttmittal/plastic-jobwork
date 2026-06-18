@@ -11,7 +11,9 @@ import { todayStr } from '../../core/utils/format'
 /**
  * PRODUCTION entry — one molding run (a date + molder + the shift(s) worked +
  * the products returned). Supports multiple products in one shift.
- *   items: [{ productId, pieces, rejects }]
+ *   items: [{ productId, pieces, rejects, rejectReason }]
+ *     rejectReason: QC reason code (config.REJECT_REASONS) when rejects > 0;
+ *     '' on old entries → shown as "Unspecified". Optional, additive.
  *   costSnapshot: computed { perProduct:[{productId, costPerPiece, ...}], ... }
  *                 stored at save time so history keeps its locked rates.
  */

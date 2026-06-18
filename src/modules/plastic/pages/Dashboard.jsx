@@ -9,7 +9,7 @@ import { todayStr, daysAgoStr, fmtNum } from '../../../core/utils/format'
 import { productMaterialCost } from '../logic/costing'
 import { allMolderBalances } from '../logic/reconcile'
 import { molderHisab } from '../logic/hisab'
-import { MACHINE_ECONOMICS } from '../config'
+import { MACHINE_ECONOMICS, rejectReasonLabel } from '../config'
 
 export default function Dashboard({ owner }) {
   const { production, issues, payments, masters, products } = usePlastic()
@@ -61,6 +61,27 @@ export default function Dashboard({ owner }) {
     return { rawOut, rawIn, prodMap }
   }, [issues.list, production.list, since15])
 
+  // Rejections — last 15 days: total good vs reject pieces, rejection %, and a
+  // breakdown by reason (QC). Pieces only — manager-safe, no money.
+  const rejects15 = useMemo(() => {
+    const prod = production.list.filter(e => !e.voided && e.date >= since15)
+    let good = 0, rej = 0
+    const byReason = {}
+    for (const e of prod) for (const it of (e.items || [])) {
+      good += Number(it.pieces) || 0
+      const r = Number(it.rejects) || 0
+      if (r > 0) {
+        rej += r
+        const key = it.rejectReason || ''
+        byReason[key] = (byReason[key] || 0) + r
+      }
+    }
+    const total = good + rej
+    const pct = total > 0 ? (rej / total) * 100 : 0
+    const reasons = Object.entries(byReason).sort((a, b) => b[1] - a[1])
+    return { good, rej, total, pct, reasons }
+  }, [production.list, since15])
+
   const balances = useMemo(() => allMolderBalances(masters, data), [masters, production.list, issues.list])
 
   // Make-vs-buy (monthly basis, scaled from this month's output).
@@ -108,6 +129,34 @@ export default function Dashboard({ owner }) {
             <Row key={p.id} label={p.name} val={`${fmtNum(last15.prodMap[p.id])} pcs`} />
           ))}
         </div>
+      </Card>
+
+      {/* Rejections — last 15 days (QC; pieces only, manager-safe) */}
+      <Card className="p-4">
+        <div className="flex items-center justify-between">
+          <FieldLabel>Rejections — last 15 days</FieldLabel>
+          {rejects15.total > 0 && (
+            <span className={`text-sm font-bold px-2.5 py-0.5 rounded-full ${
+              rejects15.pct >= 5 ? 'bg-red-100 text-red-700'
+                : rejects15.pct >= 2 ? 'bg-amber-100 text-amber-700'
+                : 'bg-emerald-100 text-emerald-700'}`}>
+              {rejects15.pct.toFixed(1)}%
+            </span>
+          )}
+        </div>
+        {rejects15.total === 0 ? (
+          <p className="text-slate-400 text-sm mt-2">No production in the last 15 days.</p>
+        ) : rejects15.rej === 0 ? (
+          <p className="text-emerald-600 text-sm mt-2 font-semibold">✅ Zero rejects on {fmtNum(rejects15.good)} pieces.</p>
+        ) : (
+          <div className="mt-2 text-sm space-y-1">
+            <Row label="Reject pieces" val={`${fmtNum(rejects15.rej)} of ${fmtNum(rejects15.total)}`} />
+            <div className="text-xs font-bold text-slate-500 uppercase mt-2">By reason</div>
+            {rejects15.reasons.map(([key, qty]) => (
+              <Row key={key || 'none'} label={rejectReasonLabel(key)} val={fmtNum(qty)} />
+            ))}
+          </div>
+        )}
       </Card>
 
       {/* Cost per piece (owner only — managers don't see money) */}

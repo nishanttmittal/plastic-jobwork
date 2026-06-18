@@ -28,6 +28,29 @@ export const ENTRY_PREFIX = 'PLW'
 export const QUICK_QTYS = [50, 100, 250, 500, 1000, 2000]
 
 /**
+ * Rejection reasons (QC) — picked per product when rejects > 0, so we build a
+ * defect history per molder and per product for root-cause + accountability.
+ * Editable here; `value` is stored on the entry, `label` is shown. Common
+ * injection-moulding defects for caps/ferrules with a moulded-in nut.
+ */
+export const REJECT_REASONS = [
+  { value: 'short_shot',   label: 'Short shot (incomplete fill)' },
+  { value: 'flash',        label: 'Flash (excess at parting line)' },
+  { value: 'burn',         label: 'Burn marks / black streaks' },
+  { value: 'sink',         label: 'Sink marks' },
+  { value: 'warpage',      label: 'Warpage / dimension off' },
+  { value: 'nut',          label: 'Nut missing / misaligned' },
+  { value: 'contamination',label: 'Contamination / mixed material' },
+  { value: 'color',        label: 'Colour / masterbatch issue' },
+  { value: 'crack',        label: 'Crack / weld line' },
+  { value: 'other',        label: 'Other' },
+]
+
+/** value → label lookup for displaying a stored reason. */
+export const rejectReasonLabel = (v) =>
+  (REJECT_REASONS.find(r => r.value === v) || {}).label || 'Unspecified'
+
+/**
  * Reconciliation tolerance — if a molder appears to have CONSUMED more compound
  * than was issued by more than this many kg, the dashboard raises a 🚩 flag.
  */

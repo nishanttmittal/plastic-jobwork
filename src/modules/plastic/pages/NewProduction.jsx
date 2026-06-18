@@ -9,7 +9,7 @@ import {
 } from '../../../core/ui'
 import { todayStr, fmtNum } from '../../../core/utils/format'
 import { entryCosting, byId } from '../logic/costing'
-import { QUICK_QTYS } from '../config'
+import { QUICK_QTYS, REJECT_REASONS } from '../config'
 
 export default function NewProduction({ owner }) {
   const { molders, products, masters, createEntry } = usePlastic()
@@ -18,7 +18,7 @@ export default function NewProduction({ owner }) {
   const [date, setDate] = useState(todayStr())
   const [molderId, setMolderId] = useState(molders[0]?.id || '')
   const [shifts, setShifts] = useState('1')
-  const [items, setItems] = useState([{ productId: products[0]?.id || '', pieces: '', rejects: '' }])
+  const [items, setItems] = useState([{ productId: products[0]?.id || '', pieces: '', rejects: '', rejectReason: '' }])
   const [runnerKg, setRunnerKg] = useState('')
   const [rejectsKg, setRejectsKg] = useState('')
   const [burntKg, setBurntKg] = useState('')
@@ -30,7 +30,10 @@ export default function NewProduction({ owner }) {
 
   const draft = useMemo(() => ({
     date, molderId, shifts: Number(shifts) || 0,
-    items: items.map(it => ({ productId: it.productId, pieces: Number(it.pieces) || 0, rejects: Number(it.rejects) || 0 })),
+    items: items.map(it => ({
+      productId: it.productId, pieces: Number(it.pieces) || 0, rejects: Number(it.rejects) || 0,
+      rejectReason: (Number(it.rejects) || 0) > 0 ? (it.rejectReason || '') : '',
+    })),
     runnerKg: Number(runnerKg) || 0, rejectsKg: Number(rejectsKg) || 0,
     burntKg: Number(burntKg) || 0, finishedKg: Number(finishedKg) || 0, note,
   }), [date, molderId, shifts, items, runnerKg, rejectsKg, burntKg, finishedKg, note])
@@ -50,7 +53,7 @@ export default function NewProduction({ owner }) {
   const weightOff = expectedKg > 0 && finishedKg && Math.abs(weightGap) > expectedKg * 0.05
 
   const setItem = (i, patch) => setItems(items.map((it, j) => j === i ? { ...it, ...patch } : it))
-  const addItem = () => setItems([...items, { productId: products[0]?.id || '', pieces: '', rejects: '' }])
+  const addItem = () => setItems([...items, { productId: products[0]?.id || '', pieces: '', rejects: '', rejectReason: '' }])
   const removeItem = (i) => setItems(items.filter((_, j) => j !== i))
 
   const totalPieces = costing.totalGoodPieces
@@ -60,7 +63,7 @@ export default function NewProduction({ owner }) {
     if (!canSave) { show('Pick a molder and enter pieces', 2500); return }
     createEntry(draft)
     show('✅ Production saved', 2000)
-    setItems([{ productId: products[0]?.id || '', pieces: '', rejects: '' }])
+    setItems([{ productId: products[0]?.id || '', pieces: '', rejects: '', rejectReason: '' }])
     setRunnerKg(''); setRejectsKg(''); setBurntKg(''); setFinishedKg(''); setNote('')
   }
 
@@ -100,6 +103,17 @@ export default function NewProduction({ owner }) {
             <FieldLabel className="text-xs">Rejects (returned as scrap)</FieldLabel>
             <NumberInput value={it.rejects} onChange={e => setItem(i, { rejects: e.target.value })} placeholder="0" className="mt-1" />
           </div>
+          {(Number(it.rejects) || 0) > 0 && (
+            <div>
+              <FieldLabel className="text-xs">Reject reason (QC)</FieldLabel>
+              <Select
+                options={[{ value: '', label: 'Select reason…' }, ...REJECT_REASONS]}
+                value={it.rejectReason || ''}
+                onChange={e => setItem(i, { rejectReason: e.target.value })}
+                className="mt-1"
+              />
+            </div>
+          )}
         </Card>
       ))}
       <Button variant="ghost" className="w-full" onClick={addItem}>＋ Add another product (same shift)</Button>
