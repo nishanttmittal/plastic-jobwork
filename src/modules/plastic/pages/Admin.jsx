@@ -10,7 +10,7 @@ import { ADMIN_PASSWORD, OWNER_EMAILS } from '../config'
 
 export default function Admin() {
   const ctx = usePlastic()
-  const { production, issues, payments, logs, masters, log } = ctx
+  const { production, issues, returns, payments, logs, masters, log } = ctx
   const [ok, setOk] = useState(false)
   const [pw, setPw] = useState('')
 
@@ -32,7 +32,7 @@ export default function Admin() {
   const backup = () => {
     const blob = {
       app: 'plastic-jobwork', exportedAt: new Date().toISOString(),
-      production: production.list, issues: issues.list, payments: payments.list,
+      production: production.list, issues: issues.list, returns: returns.list, payments: payments.list,
       logs: logs.list, masters,
     }
     const url = URL.createObjectURL(new Blob([JSON.stringify(blob, null, 2)], { type: 'application/json' }))
@@ -51,6 +51,7 @@ export default function Admin() {
         if (!confirm('Restore will REPLACE all current data with the backup. Continue?')) return
         if (Array.isArray(d.production)) production.replaceAll(d.production)
         if (Array.isArray(d.issues)) issues.replaceAll(d.issues)
+        if (Array.isArray(d.returns)) returns.replaceAll(d.returns)
         if (Array.isArray(d.payments)) payments.replaceAll(d.payments)
         if (d.masters) {
           ctx.setCompounds(d.masters.compounds || [])
@@ -73,9 +74,9 @@ export default function Admin() {
   }
 
   const resetAll = () => {
-    if (!confirm('⚠️ This clears ALL production, issues and payments (masters kept). Sure?')) return
+    if (!confirm('⚠️ This clears ALL production, issues, returns and payments (masters kept). Sure?')) return
     if (!confirm('This cannot be undone. Confirm again.')) return
-    production.replaceAll([]); issues.replaceAll([]); payments.replaceAll([])
+    production.replaceAll([]); issues.replaceAll([]); returns.replaceAll([]); payments.replaceAll([])
     log('RESET', 'Cleared all transactions', 'admin')
   }
 

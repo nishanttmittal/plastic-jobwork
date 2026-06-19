@@ -11,13 +11,14 @@ import { onSnapshot, setDoc, deleteDoc, getDocs, writeBatch } from 'firebase/fir
 import { db, paths, ensureSignedIn, reserveChallanNumber } from '../../core/db/firebase'
 import { makeNormalizer } from '../../core/schema/field'
 import { makeId } from '../../core/db/repository'
-import { productionSchema, issueSchema, paymentSchema, userSchema } from './schema'
+import { productionSchema, issueSchema, returnSchema, paymentSchema, userSchema } from './schema'
 import { SEED_COMPOUNDS, SEED_MASTERBATCH, SEED_INSERTS, SEED_MOLDERS, SEED_PRODUCTS } from './config'
 import { formatEntryNo, entryCosting } from './logic/costing'
 import { PlasticCtx } from './PlasticContext'
 
 const normProd = makeNormalizer(productionSchema)
 const normIssue = makeNormalizer(issueSchema)
+const normReturn = makeNormalizer(returnSchema)
 const normPay = makeNormalizer(paymentSchema)
 const normUser = makeNormalizer(userSchema)
 
@@ -28,6 +29,7 @@ export function FirestoreProvider({ children }) {
 
   const [production, setProductionList] = useState([])
   const [issues, setIssuesList] = useState([])
+  const [returns, setReturnsList] = useState([])
   const [payments, setPaymentsList] = useState([])
   const [logsList, setLogsList] = useState([])
   const [usersList, setUsersList] = useState([])
@@ -51,6 +53,7 @@ export function FirestoreProvider({ children }) {
           (s) => { done = true; clearTimeout(timer); setProductionList(s.docs.map(d => normProd({ id: d.id, ...d.data() }))); setReady(true) },
           (e) => { done = true; clearTimeout(timer); setError(e.message); setReady(true) }))
         unsubs.push(onSnapshot(paths.issues(), (s) => setIssuesList(s.docs.map(d => normIssue({ id: d.id, ...d.data() })))))
+        unsubs.push(onSnapshot(paths.returns(), (s) => setReturnsList(s.docs.map(d => normReturn({ id: d.id, ...d.data() })))))
         // payments are owner-only in the rules; a manager's read is denied —
         // swallow that error so the console stays clean and money stays empty.
         unsubs.push(onSnapshot(paths.payments(),
@@ -91,6 +94,7 @@ export function FirestoreProvider({ children }) {
 
   const productionApi = coll(production, paths.productionDoc, paths.production)
   const issuesApi = coll(issues, paths.issueDoc, paths.issues)
+  const returnsApi = coll(returns, paths.returnDoc, paths.returns)
   const paymentsApi = coll(payments, paths.paymentDoc, paths.payments)
   const usersApi = coll(usersList, paths.user, paths.users)
   const logsApi = { list: logsList, insert: (rec) => log(rec.action, rec.detail, rec.by) }
@@ -138,7 +142,7 @@ export function FirestoreProvider({ children }) {
   }
 
   const value = {
-    production: productionApi, issues: issuesApi, payments: paymentsApi, logs: logsApi, users: usersApi,
+    production: productionApi, issues: issuesApi, returns: returnsApi, payments: paymentsApi, logs: logsApi, users: usersApi,
     compounds, setCompounds, masterbatch, setMasterbatch, inserts, setInserts,
     molders, setMolders, products, setProducts,
     masters, createEntry, peekNextEntryNo, log,

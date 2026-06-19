@@ -12,9 +12,9 @@ import { molderHisab } from '../logic/hisab'
 import { MACHINE_ECONOMICS, rejectReasonLabel } from '../config'
 
 export default function Dashboard({ owner }) {
-  const { production, issues, payments, masters, products } = usePlastic()
+  const { production, issues, returns, payments, masters, products } = usePlastic()
 
-  const data = { production: production.list, issues: issues.list, payments: payments.list }
+  const data = { production: production.list, issues: issues.list, returns: returns.list, payments: payments.list }
 
   const today = todayStr()
   const piecesToday = useMemo(() => production.list
@@ -45,6 +45,7 @@ export default function Dashboard({ owner }) {
   const last15 = useMemo(() => {
     const iss = issues.list.filter(i => !i.voided && i.date >= since15)
     const prod = production.list.filter(e => !e.voided && e.date >= since15)
+    const ret = returns.list.filter(r => !r.voided && r.date >= since15)
     const rawOut = {
       compoundKg: iss.reduce((s, i) => s + (Number(i.compoundKg) || 0), 0),
       mbKg: iss.reduce((s, i) => s + (Number(i.mbKg) || 0), 0),
@@ -53,13 +54,15 @@ export default function Dashboard({ owner }) {
     const rawIn = {
       regrindKg: prod.reduce((s, e) => s + (Number(e.runnerKg) || 0) + (Number(e.rejectsKg) || 0), 0),
       burntKg: prod.reduce((s, e) => s + (Number(e.burntKg) || 0), 0),
+      returnedKg: ret.reduce((s, r) => s + (Number(r.compoundKg) || 0) + (Number(r.regrindKg) || 0), 0),
+      returnedNuts: ret.reduce((s, r) => s + (Number(r.nutQty) || 0), 0),
     }
     const prodMap = {}
     for (const e of prod) for (const it of (e.items || [])) {
       prodMap[it.productId] = (prodMap[it.productId] || 0) + (Number(it.pieces) || 0)
     }
     return { rawOut, rawIn, prodMap }
-  }, [issues.list, production.list, since15])
+  }, [issues.list, production.list, returns.list, since15])
 
   // Rejections — last 15 days: total good vs reject pieces, rejection %, and a
   // breakdown by reason (QC). Pieces only — manager-safe, no money.
@@ -89,7 +92,7 @@ export default function Dashboard({ owner }) {
     return { good, rej, total, pct, reasons }
   }, [production.list, since15])
 
-  const balances = useMemo(() => allMolderBalances(masters, data), [masters, production.list, issues.list])
+  const balances = useMemo(() => allMolderBalances(masters, data), [masters, production.list, issues.list, returns.list])
 
   // Make-vs-buy (monthly basis, scaled from this month's output).
   const E = MACHINE_ECONOMICS
@@ -124,6 +127,8 @@ export default function Dashboard({ owner }) {
           <div className="text-xs font-bold text-slate-500 uppercase mt-2">Returned (IN)</div>
           <Row label="Regrind (runner + rejects)" val={`${fmtNum(last15.rawIn.regrindKg)} kg`} />
           <Row label="Burnt loss" val={`${fmtNum(last15.rawIn.burntKg)} kg`} />
+          <Row label="Returned by molder (compound + regrind)" val={`${fmtNum(last15.rawIn.returnedKg)} kg`} />
+          <Row label="Nuts returned" val={fmtNum(last15.rawIn.returnedNuts)} />
         </div>
       </Card>
 

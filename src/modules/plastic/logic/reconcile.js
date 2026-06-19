@@ -6,6 +6,7 @@
  *          + runner returned  (regrind)
  *          + rejects returned (scrap, regrind)
  *          + burnt / purge loss (destroyed — owner's loss)
+ *          + material physically RETURNED unused (compound + regrind handed back)
  *          + balance still lying with the molder
  *
  * A 🚩 flag is raised when a molder appears to have consumed MORE than issued
@@ -24,16 +25,25 @@ const active = (rows) => (rows || []).filter(r => !r.voided)
 
 /**
  * Reconcile one molder.
- * data = { issues, production, products }
+ * data = { issues, production, returns, products }
+ * `returns` is optional — when absent (or empty) the result is identical to the
+ * pre-returns behaviour, so every existing caller keeps working unchanged.
  */
 export function molderBalance(molderId, data) {
   const issues = active(data.issues).filter(i => i.molderId === molderId)
   const entries = active(data.production).filter(p => p.molderId === molderId)
+  const returns = active(data.returns).filter(r => r.molderId === molderId)
   const products = data.products || []
 
   const issuedKg = round2(issues.reduce((s, i) => s + (Number(i.compoundKg) || 0), 0))
   const nutsIssued = issues.reduce((s, i) => s + (Number(i.nutQty) || 0), 0)
   const mbIssuedKg = round2(issues.reduce((s, i) => s + (Number(i.mbKg) || 0), 0))
+
+  // Material the molder physically handed back (reduces what's still with him).
+  const returnedCompoundKg = round2(returns.reduce((s, r) => s + (Number(r.compoundKg) || 0), 0))
+  const returnedRegrindKg = round2(returns.reduce((s, r) => s + (Number(r.regrindKg) || 0), 0))
+  const returnedNuts = returns.reduce((s, r) => s + (Number(r.nutQty) || 0), 0)
+  const returnedKg = round2(returnedCompoundKg + returnedRegrindKg)
 
   let plasticInProductsKg = 0
   let nutsUsed = 0
@@ -57,7 +67,9 @@ export function molderBalance(molderId, data) {
   burntKg = round2(burntKg)
 
   const accountedKg = round2(plasticInProductsKg + runnerKg + rejectsKg + burntKg)
-  const balanceKg = round2(issuedKg - accountedKg)
+  // Balance still lying with the molder = issued − consumed/returned-via-production
+  // − material he physically handed back (unused compound + loose regrind).
+  const balanceKg = round2(issuedKg - accountedKg - returnedKg)
   const regrindKg = round2(runnerKg + rejectsKg) // reusable returned stock
 
   // Expected pieces from the compound issued (yield estimate): for each issue
@@ -76,10 +88,11 @@ export function molderBalance(molderId, data) {
     molderId,
     issuedKg, mbIssuedKg,
     plasticInProductsKg, runnerKg, rejectsKg, burntKg,
+    returnedCompoundKg, returnedRegrindKg, returnedKg, returnedNuts,
     accountedKg, balanceKg, regrindKg,
     goodPieces,
     expectedPieces, producedPieces, pendingPieces,
-    nutsIssued, nutsUsed, nutBalance: nutsIssued - nutsUsed,
+    nutsIssued, nutsUsed, nutBalance: nutsIssued - nutsUsed - returnedNuts,
     flag: balanceKg < -RECON_TOLERANCE_KG,
   }
 }
@@ -89,6 +102,7 @@ export function allMolderBalances(masters, data) {
   const ids = new Set([
     ...active(data.issues).map(i => i.molderId),
     ...active(data.production).map(p => p.molderId),
+    ...active(data.returns).map(r => r.molderId),
   ])
   return [...ids].map(id => ({
     molder: byId(masters.molders, id),

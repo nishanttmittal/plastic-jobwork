@@ -54,6 +54,24 @@ export const issueSchema = [
 ]
 
 /**
+ * RETURN — material the molder physically HANDS BACK (unused virgin compound,
+ * loose regrind/runner, and/or nuts). Reduces the molder's running balance.
+ * Counterpart to ISSUE (ISSUE adds to balance, RETURN removes). Additive —
+ * molders with no returns reconcile exactly as before.
+ */
+export const returnSchema = [
+  field({ name: 'date',       label: 'Date',       type: 'date',   default: todayStr, required: true }),
+  field({ name: 'molderId',   label: 'Molder',     type: 'text',   default: '', required: true }),
+  field({ name: 'compoundId', label: 'Compound',   type: 'text',   default: '' }),
+  field({ name: 'compoundKg', label: 'Compound returned (kg)', type: 'number', default: 0 }),
+  field({ name: 'regrindKg',  label: 'Regrind returned (kg)',  type: 'number', default: 0 }),
+  field({ name: 'insertId',   label: 'Nut/Insert', type: 'text',   default: '' }),
+  field({ name: 'nutQty',     label: 'Nuts returned (qty)', type: 'number', default: 0 }),
+  field({ name: 'note',       label: 'Note',       type: 'text',   default: '' }),
+  field({ name: 'voided',     label: 'Voided',     type: 'toggle', default: false }),
+]
+
+/**
  * PAYMENT — money to a molder. kind: 'payment' (settling dues) | 'advance'.
  */
 export const paymentSchema = [

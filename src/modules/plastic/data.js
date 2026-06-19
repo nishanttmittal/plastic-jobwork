@@ -5,7 +5,7 @@
  */
 import { createCollection, createSingleton } from '../../core/db/repository'
 import { makeNormalizer } from '../../core/schema/field'
-import { productionSchema, issueSchema, paymentSchema, userSchema } from './schema'
+import { productionSchema, issueSchema, returnSchema, paymentSchema, userSchema } from './schema'
 import {
   KEYS, SEED_COMPOUNDS, SEED_MASTERBATCH, SEED_INSERTS, SEED_MOLDERS, SEED_PRODUCTS,
 } from './config'
@@ -18,6 +18,10 @@ export const productionRepo = createCollection(KEYS.production, {
 export const issuesRepo = createCollection(KEYS.issues, {
   seed: () => [],
   normalize: makeNormalizer(issueSchema),
+})
+export const returnsRepo = createCollection(KEYS.returns, {
+  seed: () => [],
+  normalize: makeNormalizer(returnSchema),
 })
 export const paymentsRepo = createCollection(KEYS.payments, {
   seed: () => [],

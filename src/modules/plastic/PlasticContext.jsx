@@ -8,7 +8,7 @@
 import { createContext, useContext, useCallback, useMemo } from 'react'
 import { useCollection, useSingleton } from '../../core/hooks/useCollection'
 import {
-  productionRepo, issuesRepo, paymentsRepo, logsRepo, usersRepo,
+  productionRepo, issuesRepo, returnsRepo, paymentsRepo, logsRepo, usersRepo,
   compoundsStore, masterbatchStore, insertsStore, moldersStore, productsStore,
   counterStore,
 } from './data'
@@ -29,6 +29,7 @@ export function PlasticProvider({ children }) {
 function LocalPlasticProvider({ children }) {
   const production = useCollection(productionRepo)
   const issues = useCollection(issuesRepo)
+  const returns = useCollection(returnsRepo)
   const payments = useCollection(paymentsRepo)
   const logs = useCollection(logsRepo)
   const users = useCollection(usersRepo)
@@ -82,7 +83,7 @@ function LocalPlasticProvider({ children }) {
   }, [production, counter, setCounter, highestExistingNo, masters, log])
 
   const value = {
-    production, issues, payments, logs, users,
+    production, issues, returns, payments, logs, users,
     compounds, setCompounds,
     masterbatch, setMasterbatch,
     inserts, setInserts,

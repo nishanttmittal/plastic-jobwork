@@ -75,6 +75,7 @@ export const MACHINE_ECONOMICS = {
 export const KEYS = {
   production:  'plw_production',
   issues:      'plw_issues',
+  returns:     'plw_returns',
   payments:    'plw_payments',
   counter:     'plw_entry_counter',
   compounds:   'plw_compounds',

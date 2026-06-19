@@ -1,6 +1,8 @@
 /**
- * Issue Material — record compound / masterbatch / nuts handed to a molder
- * (bulk or per-job). Feeds the molder's running material balance.
+ * Return Material — record material the molder physically HANDS BACK: unused
+ * virgin compound, loose regrind/runner, and/or leftover nuts. This is the
+ * counterpart to "Issue Material": issuing adds to his balance, returning
+ * removes from it. Additive — does not touch production or costing.
  */
 import { useState } from 'react'
 import { usePlastic } from '../PlasticContext'
@@ -11,54 +13,52 @@ import { todayStr, fmtNum } from '../../../core/utils/format'
 import { molderBalance } from '../logic/reconcile'
 import { byId } from '../logic/costing'
 
-export default function IssueCompound() {
-  const { molders, compounds, masterbatch, inserts, masters, issues, production, returns, log } = usePlastic()
+export default function ReturnMaterial() {
+  const { molders, compounds, inserts, masters, issues, production, returns, log } = usePlastic()
   const { msg, show } = useToast()
 
   const [date, setDate] = useState(todayStr())
   const [molderId, setMolderId] = useState(molders[0]?.id || '')
   const [compoundId, setCompoundId] = useState(compounds[0]?.id || '')
   const [compoundKg, setCompoundKg] = useState('')
-  const [productId, setProductId] = useState(masters.products.find(p => (Number(p.gPerPiece) || 0) > 0)?.id || '')
-  const [mbId, setMbId] = useState('')
-  const [mbKg, setMbKg] = useState('')
+  const [regrindKg, setRegrindKg] = useState('')
   const [insertId, setInsertId] = useState('')
   const [nutQty, setNutQty] = useState('')
   const [note, setNote] = useState('')
 
   const molderOpts = molders.map(m => ({ value: m.id, label: m.name }))
   const compoundOpts = compounds.map(c => ({ value: c.id, label: `${c.name} · ₹${c.rate}/kg` }))
-  const mbOpts = [{ value: '', label: '— none —' }, ...masterbatch.map(m => ({ value: m.id, label: m.name }))]
   const nutOpts = [{ value: '', label: '— none —' }, ...inserts.map(i => ({ value: i.id, label: `${i.name} · ₹${i.rate}` }))]
-  const productOpts = masters.products.map(p => ({ value: p.id, label: p.name }))
 
-  // Live yield estimate: how many pieces this compound should make.
-  const selProduct = byId(masters.products, productId)
-  const gpp = Number(selProduct?.gPerPiece) || 0
-  const expectedFromThis = gpp > 0 ? Math.round(((Number(compoundKg) || 0) * 1000) / gpp) : 0
+  const bal = molderId
+    ? molderBalance(molderId, { issues: issues.list, production: production.list, returns: returns.list, products: masters.products })
+    : null
 
-  const bal = molderId ? molderBalance(molderId, { issues: issues.list, production: production.list, returns: returns.list, products: masters.products }) : null
-
-  const canSave = molderId && ((Number(compoundKg) || 0) > 0 || (Number(nutQty) || 0) > 0 || (Number(mbKg) || 0) > 0)
+  const canSave = molderId && ((Number(compoundKg) || 0) > 0 || (Number(regrindKg) || 0) > 0 || (Number(nutQty) || 0) > 0)
 
   const save = () => {
-    if (!canSave) { show('Enter a quantity to issue', 2500); return }
-    issues.insert({
+    if (!canSave) { show('Enter a quantity returned', 2500); return }
+    returns.insert({
       date, molderId,
-      compoundId, compoundKg: Number(compoundKg) || 0, productId,
-      mbId, mbKg: Number(mbKg) || 0,
+      compoundId, compoundKg: Number(compoundKg) || 0,
+      regrindKg: Number(regrindKg) || 0,
       insertId, nutQty: Number(nutQty) || 0,
       note, voided: false, createdAt: new Date().toISOString(),
     })
     const m = byId(molders, molderId)
-    log('ISSUE', `${m?.name || molderId} · ${fmtNum(compoundKg) || 0}kg · ${fmtNum(nutQty) || 0} nuts`)
-    show('✅ Material issued', 2000)
-    setCompoundKg(''); setMbKg(''); setNutQty(''); setNote('')
+    log('RETURN', `${m?.name || molderId} · ${fmtNum(compoundKg) || 0}kg compound · ${fmtNum(regrindKg) || 0}kg regrind · ${fmtNum(nutQty) || 0} nuts`)
+    show('✅ Material received back', 2000)
+    setCompoundKg(''); setRegrindKg(''); setNutQty(''); setNote('')
   }
 
   return (
     <div className="max-w-lg mx-auto p-4 space-y-4">
       <Toast msg={msg} />
+
+      <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800">
+        Record material the molder <b>hands back</b> (unused compound, loose regrind, leftover nuts).
+        This reduces what's shown as “lying with the molder”.
+      </div>
 
       <Card className="p-4 space-y-3">
         <div>
@@ -72,35 +72,20 @@ export default function IssueCompound() {
       </Card>
 
       <Card className="p-4 space-y-3">
-        <FieldLabel>Compound</FieldLabel>
+        <FieldLabel>Compound returned (unused)</FieldLabel>
         <Select options={compoundOpts} value={compoundId} onChange={e => setCompoundId(e.target.value)} />
         <div>
           <span className="text-xs text-slate-500">Compound weight (kg)</span>
           <NumberInput value={compoundKg} onChange={e => setCompoundKg(e.target.value)} placeholder="0" className="mt-1" />
         </div>
         <div>
-          <span className="text-xs text-slate-500">For product (to estimate pieces)</span>
-          <Select options={productOpts} value={productId} onChange={e => setProductId(e.target.value)} className="mt-1" />
-        </div>
-        {expectedFromThis > 0 && (
-          <div className="bg-teal-50 border border-teal-200 rounded-xl p-3 text-center">
-            <div className="text-3xl font-bold text-teal-800">≈ {fmtNum(expectedFromThis)} pcs</div>
-            <div className="text-xs text-slate-500 mt-0.5">expected from {fmtNum(compoundKg)} kg of {selProduct?.name}</div>
-          </div>
-        )}
-      </Card>
-
-      <Card className="p-4 space-y-3">
-        <FieldLabel>Masterbatch (optional)</FieldLabel>
-        <Select options={mbOpts} value={mbId} onChange={e => setMbId(e.target.value)} />
-        <div>
-          <span className="text-xs text-slate-500">Masterbatch weight (kg)</span>
-          <NumberInput value={mbKg} onChange={e => setMbKg(e.target.value)} placeholder="0" className="mt-1" />
+          <span className="text-xs text-slate-500">Regrind / runner returned (kg)</span>
+          <NumberInput value={regrindKg} onChange={e => setRegrindKg(e.target.value)} placeholder="0" className="mt-1" />
         </div>
       </Card>
 
       <Card className="p-4 space-y-3">
-        <FieldLabel>Nuts / Inserts (optional)</FieldLabel>
+        <FieldLabel>Nuts / Inserts returned (optional)</FieldLabel>
         <Select options={nutOpts} value={insertId} onChange={e => setInsertId(e.target.value)} />
         <div>
           <span className="text-xs text-slate-500">Nut quantity</span>
@@ -119,10 +104,6 @@ export default function IssueCompound() {
             <span className="text-slate-600">Nuts balance</span>
             <span className="font-mono font-bold">{fmtNum(bal.nutBalance)}</span>
           </div>
-          <div className="flex justify-between text-sm border-t pt-2 mt-1">
-            <span className="text-slate-600">Pending pieces (approx)</span>
-            <span className="font-mono font-bold text-teal-700">{fmtNum(bal.pendingPieces)}</span>
-          </div>
         </Card>
       )}
 
@@ -130,7 +111,7 @@ export default function IssueCompound() {
         className="w-full border-2 border-slate-200 rounded-2xl px-4 py-3 text-base" rows={2} />
 
       <Button variant="success" size="lg" className="w-full" disabled={!canSave} onClick={save}>
-        Issue Material
+        Record Return
       </Button>
     </div>
   )
