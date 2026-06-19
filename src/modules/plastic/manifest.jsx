@@ -10,6 +10,7 @@ import IssueCompound from './pages/IssueCompound'
 import ReturnMaterial from './pages/ReturnMaterial'
 import MoulderMaterial from './pages/MoulderMaterial'
 import Entries from './pages/Entries'
+import Pricing from './pages/Pricing'
 import Masters from './pages/Masters'
 import Hisab from './pages/Hisab'
 import Admin from './pages/Admin'
@@ -52,6 +53,7 @@ export const plasticModule = {
     { key: 'return',     title: 'Return Material', desc: 'Material the molder hands back',     icon: '↩️', color: 'from-amber-600 to-amber-700',     roles: ['manager', 'owner'], Component: ReturnMaterial },
     { key: 'material',   title: 'Moulder Material', desc: 'How much is left with each molder', icon: '⚖️', color: 'from-sky-600 to-sky-700',         roles: ['manager', 'owner'], Component: MoulderMaterial },
     { key: 'entries',    title: 'Entries',       desc: 'See every entry · void',              icon: '📜', color: 'from-slate-500 to-slate-600',     roles: ['manager', 'owner'], Component: Entries },
+    { key: 'pricing',    title: 'Pricing',       desc: 'Per-piece price: ±nut, ±waste',       icon: '🏷️', color: 'from-rose-600 to-rose-700',       roles: ['owner'], Component: Pricing },
     { key: 'hisab',      title: 'Molder Hisab',  desc: 'Dues, advances, balance, PDF',        icon: '📒', color: 'from-violet-600 to-violet-700',   roles: ['owner'], Component: Hisab },
     { key: 'masters',    title: 'Masters & Rates', desc: 'Compounds, nuts, molders, products', icon: '🗂️', color: 'from-amber-500 to-amber-600',    roles: ['owner'], Component: Masters },
     { key: 'admin',      title: 'Admin',         desc: 'Backup, logs, void & reset',          icon: '⚙️', color: 'from-slate-600 to-slate-700',     roles: ['owner'], Component: Admin },
