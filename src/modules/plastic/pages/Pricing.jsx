@@ -30,13 +30,24 @@ export default function Pricing() {
   const [shotsPerHr, setShotsPerHr] = useState(String(product?.shotsPerHour || 70))
   const [shiftHrs, setShiftHrs] = useState('12')
   const [wastePct, setWastePct] = useState('0')
+  const [regrindPct, setRegrindPct] = useState('0')
 
   const calc = useMemo(() => {
     if (!product || !molder) return null
     const cavities = Number(product.cavities) || 1
     const piecesPerShift = cavities * (Number(shotsPerHr) || 0) * (Number(shiftHrs) || 0)
     const mat = productMaterialCost(product, masters)        // {compound, masterbatch, nut, total}
-    const matNoNut = mat.compound + mat.masterbatch
+
+    // Regrind reuse: the runner (sprue) regenerated every shot can be reground and
+    // blended back, so that % of the runner's plastic is NOT bought as fresh virgin.
+    const cmp = byId(masters.compounds, product.compoundId)
+    const rate = Number(cmp?.rate) || 0
+    const runnerPerPiece = (Number(product.runnerGPerShot) || 0) / cavities  // grams
+    const R = Math.min(1, Math.max(0, (Number(regrindPct) || 0) / 100))
+    const regrindSaving = (runnerPerPiece * R * rate) / 1000  // ₹/piece saved
+    const compoundEff = Math.max(0, mat.compound - regrindSaving)
+
+    const matNoNut = compoundEff + mat.masterbatch
     const shiftCost = molder.gst
       ? (Number(molder.shiftRate) || 0) * (1 + (Number(molder.gstPct) || 0) / 100)
       : (Number(molder.shiftRate) || 0)
@@ -48,12 +59,13 @@ export default function Pricing() {
     const noNut_clean = matNoNut + jobWork
     return {
       cavities, piecesPerShift, jobWork, shiftCost,
-      compound: mat.compound, masterbatch: mat.masterbatch, nut: mat.nut,
+      compound: mat.compound, compoundEff, regrindSaving, runnerPerPiece,
+      masterbatch: mat.masterbatch, nut: mat.nut,
       withNut_clean, noNut_clean,
       withNut_waste: f > 0 ? withNut_clean / f : 0,
       noNut_waste: f > 0 ? noNut_clean / f : 0,
     }
-  }, [product, molder, masters, shotsPerHr, shiftHrs, wastePct])
+  }, [product, molder, masters, shotsPerHr, shiftHrs, wastePct, regrindPct])
 
   const molderOpts = molders.map(m => ({ value: m.id, label: m.name }))
   const productOpts = products.map(p => ({ value: p.id, label: p.name }))
@@ -69,7 +81,7 @@ export default function Pricing() {
           <FieldLabel>Molder (shift rate)</FieldLabel>
           <Select options={molderOpts} value={molderId} onChange={e => setMolderId(e.target.value)} className="mt-1" />
         </div>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2">
           <div>
             <span className="text-xs text-slate-500">Shots / hour</span>
             <NumberInput value={shotsPerHr} onChange={e => setShotsPerHr(e.target.value)} className="mt-1" />
@@ -81,6 +93,10 @@ export default function Pricing() {
           <div>
             <span className="text-xs text-slate-500">Wastage %</span>
             <NumberInput value={wastePct} onChange={e => setWastePct(e.target.value)} className="mt-1" />
+          </div>
+          <div>
+            <span className="text-xs text-slate-500">Regrind reused %</span>
+            <NumberInput value={regrindPct} onChange={e => setRegrindPct(e.target.value)} className="mt-1" />
           </div>
         </div>
       </Card>
@@ -106,6 +122,9 @@ export default function Pricing() {
             <FieldLabel>How it's built (per good piece)</FieldLabel>
             <div className="mt-2 text-sm space-y-1">
               <Row label={`Compound (${fmtNum(product.gPerPiece)} g)`} val={rupee(calc.compound)} />
+              {calc.regrindSaving > 0 && (
+                <Row label={`Regrind reused (−${fmtNum(regrindPct)}% of runner)`} val={`− ${rupee(calc.regrindSaving)}`} />
+              )}
               {calc.masterbatch > 0 && <Row label="Masterbatch" val={rupee(calc.masterbatch)} />}
               <Row label="Nut / inserts" val={rupee(calc.nut)} />
               <Row label={`Job-work (₹${fmtNum(calc.shiftCost)}/shift ÷ ${fmtNum(calc.piecesPerShift)} pcs)`} val={rupee(calc.jobWork)} />
