@@ -31,6 +31,10 @@ export default function Pricing() {
   const [shiftHrs, setShiftHrs] = useState('12')
   const [wastePct, setWastePct] = useState('0')
   const [regrindPct, setRegrindPct] = useState('0')
+  const [limitRegrind, setLimitRegrind] = useState(true)   // ON = cap reuse at safe blend
+  const [blendLimit, setBlendLimit] = useState('20')       // safe blend % (15–20 typical)
+  const [targetPrice, setTargetPrice] = useState('')       // reverse: desired ₹/piece
+  const [targetWithNut, setTargetWithNut] = useState('1')  // '1' incl nut, '0' without
 
   const calc = useMemo(() => {
     if (!product || !molder) return null
@@ -43,7 +47,13 @@ export default function Pricing() {
     const cmp = byId(masters.compounds, product.compoundId)
     const rate = Number(cmp?.rate) || 0
     const runnerPerPiece = (Number(product.runnerGPerShot) || 0) / cavities  // grams
-    const R = Math.min(1, Math.max(0, (Number(regrindPct) || 0) / 100))
+    // Quality cap: regrind weakens the part, so blend is usually held to ~15–20%.
+    // Owner can keep the cap ON (locked to the safe blend) or switch it OFF to override.
+    const reuseInput = Math.max(0, Number(regrindPct) || 0)
+    const limit = Math.max(0, Number(blendLimit) || 0)
+    const effReusePct = limitRegrind ? Math.min(reuseInput, limit) : reuseInput
+    const capped = limitRegrind && reuseInput > limit
+    const R = Math.min(1, effReusePct / 100)
     const regrindSaving = (runnerPerPiece * R * rate) / 1000  // ₹/piece saved
     const compoundEff = Math.max(0, mat.compound - regrindSaving)
 
@@ -60,12 +70,24 @@ export default function Pricing() {
     return {
       cavities, piecesPerShift, jobWork, shiftCost,
       compound: mat.compound, compoundEff, regrindSaving, runnerPerPiece,
+      effReusePct, capped,
       masterbatch: mat.masterbatch, nut: mat.nut,
       withNut_clean, noNut_clean,
       withNut_waste: f > 0 ? withNut_clean / f : 0,
       noNut_waste: f > 0 ? noNut_clean / f : 0,
     }
-  }, [product, molder, masters, shotsPerHr, shiftHrs, wastePct, regrindPct])
+  }, [product, molder, masters, shotsPerHr, shiftHrs, wastePct, regrindPct, limitRegrind, blendLimit])
+
+  // Reverse: target price/piece → the shift cost it implies (everything else held).
+  const rev = useMemo(() => {
+    const t = Number(targetPrice) || 0
+    if (!calc || t <= 0) return null
+    const material = (calc.compoundEff + calc.masterbatch) + (targetWithNut === '1' ? calc.nut : 0)
+    const jwPiece = t - material
+    const shiftIncl = jwPiece * calc.piecesPerShift
+    const gstMult = molder?.gst ? (1 + (Number(molder.gstPct) || 0) / 100) : 1
+    return { t, material, jwPiece, shiftIncl, shiftBeforeGst: shiftIncl / gstMult, ok: jwPiece >= 0, gst: !!molder?.gst }
+  }, [calc, targetPrice, targetWithNut, molder])
 
   const molderOpts = molders.map(m => ({ value: m.id, label: m.name }))
   const productOpts = products.map(p => ({ value: p.id, label: p.name }))
@@ -99,6 +121,32 @@ export default function Pricing() {
             <NumberInput value={regrindPct} onChange={e => setRegrindPct(e.target.value)} className="mt-1" />
           </div>
         </div>
+
+        {/* Quality cap — owner's switch: keep regrind blend capped, or override */}
+        <div className="flex items-center justify-between bg-slate-50 rounded-xl px-3 py-2">
+          <div className="min-w-0">
+            <div className="text-sm font-semibold text-slate-700">Cap regrind at safe blend</div>
+            <div className="text-xs text-slate-400">Protects strength — limit reuse to a safe % (15–20 typical)</div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            {limitRegrind && (
+              <div className="w-16">
+                <NumberInput value={blendLimit} onChange={e => setBlendLimit(e.target.value)} className="!py-1 text-center" />
+              </div>
+            )}
+            <button
+              onClick={() => setLimitRegrind(v => !v)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold ${limitRegrind ? 'bg-emerald-600 text-white' : 'bg-slate-300 text-slate-700'}`}
+            >
+              {limitRegrind ? 'ON' : 'OFF'}
+            </button>
+          </div>
+        </div>
+        {calc?.capped && (
+          <p className="text-xs text-amber-600">
+            Reuse capped at {fmtNum(blendLimit)}% (you entered {fmtNum(regrindPct)}%). Turn the cap OFF to override.
+          </p>
+        )}
       </Card>
 
       {calc && (
@@ -123,7 +171,7 @@ export default function Pricing() {
             <div className="mt-2 text-sm space-y-1">
               <Row label={`Compound (${fmtNum(product.gPerPiece)} g)`} val={rupee(calc.compound)} />
               {calc.regrindSaving > 0 && (
-                <Row label={`Regrind reused (−${fmtNum(regrindPct)}% of runner)`} val={`− ${rupee(calc.regrindSaving)}`} />
+                <Row label={`Regrind reused (${fmtNum(calc.effReusePct)}% of runner${calc.capped ? ', capped' : ''})`} val={`− ${rupee(calc.regrindSaving)}`} />
               )}
               {calc.masterbatch > 0 && <Row label="Masterbatch" val={rupee(calc.masterbatch)} />}
               <Row label="Nut / inserts" val={rupee(calc.nut)} />
@@ -135,6 +183,38 @@ export default function Pricing() {
             <p className="text-xs text-slate-400 mt-2">
               {fmtNum(calc.cavities)} cavities × {fmtNum(shotsPerHr)} shots/hr × {fmtNum(shiftHrs)} hr = {fmtNum(calc.piecesPerShift)} pieces per shift.
             </p>
+          </Card>
+
+          {/* Reverse — target price → required shift cost */}
+          <Card className="p-4">
+            <FieldLabel>Reverse — target price → shift cost</FieldLabel>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <div>
+                <span className="text-xs text-slate-500">Target ₹/piece</span>
+                <NumberInput value={targetPrice} onChange={e => setTargetPrice(e.target.value)} placeholder="e.g. 5.70" className="mt-1" />
+              </div>
+              <div>
+                <span className="text-xs text-slate-500">Target is</span>
+                <Select className="mt-1" value={targetWithNut} onChange={e => setTargetWithNut(e.target.value)}
+                  options={[{ value: '1', label: 'with nut' }, { value: '0', label: 'without nut' }]} />
+              </div>
+            </div>
+            {rev && (
+              rev.ok ? (
+                <div className="mt-3 bg-rose-50 rounded-xl p-3 text-center">
+                  <div className="text-2xl font-bold text-rose-700">≤ {rupee(rev.shiftBeforeGst)} / shift</div>
+                  <div className="text-xs text-slate-500 mt-0.5">
+                    to hit {rupee(rev.t)} {targetWithNut === '1' ? 'with' : 'without'} nut
+                    {rev.gst ? ` (₹${rev.shiftIncl.toFixed(0)} incl GST)` : ''} · job-work ≤ {rupee(rev.jwPiece)}/pc
+                  </div>
+                </div>
+              ) : (
+                <p className="mt-3 text-sm text-red-600 text-center">
+                  {rupee(rev.t)} is below the material cost ({rupee(rev.material)}) — impossible at this rate even with a free shift.
+                </p>
+              )
+            )}
+            <p className="text-xs text-slate-400 mt-2">Holds material, nut &amp; output constant; tells you the most the moulding shift can cost.</p>
           </Card>
         </>
       )}
