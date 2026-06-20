@@ -10,7 +10,7 @@
  *                    material + nuts + machine time loaded onto the good pieces.
  * Owner-only (shows money).
  */
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { usePlastic } from '../PlasticContext'
 import { Card, FieldLabel, Select, NumberInput } from '../../../core/ui'
 import { fmtNum } from '../../../core/utils/format'
@@ -28,6 +28,11 @@ export default function Pricing() {
   const molder = byId(masters.molders, molderId)
 
   const [shotsPerHr, setShotsPerHr] = useState(String(product?.shotsPerHour || 70))
+  // When the selected product changes, reset shots/hr to that product's own rate.
+  useEffect(() => {
+    const p = (masters.products || []).find(x => x.id === productId)
+    setShotsPerHr(String(p?.shotsPerHour || 70))
+  }, [productId])  // eslint-disable-line react-hooks/exhaustive-deps
   const [shiftHrs, setShiftHrs] = useState('12')
   const [wastePct, setWastePct] = useState('0')
   const [regrindPct, setRegrindPct] = useState('0')
