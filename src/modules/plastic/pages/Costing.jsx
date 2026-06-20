@@ -61,14 +61,14 @@ export default function Costing() {
     return {
       cavities, piecesPerShift, jobWork, shiftCost, rate,
       compound: mat.compound, compoundEff, regrindSaving, masterbatch: mat.masterbatch, nut: mat.nut,
-      effReusePct, capped, price, baseNoNut: compoundEff + mat.masterbatch, W,
+      effReusePct, capped, price, materialOnly: compoundEff + mat.masterbatch, W,
     }
   }, [product, molder, masters, shotsPerHr, shiftHrs, regrindPct, limitRegrind, blendLimit, includeNut, includeScrap, scrapPct])
 
   const rev = useMemo(() => {
     const t = Number(targetPrice) || 0
     if (!c || t <= 0) return null
-    const material = c.baseNoNut + (targetWithNut === '1' ? c.nut : 0)
+    const material = c.materialOnly + (targetWithNut === '1' ? c.nut : 0)
     const jwPiece = t - material
     const shiftIncl = jwPiece * c.piecesPerShift
     const gstMult = molder?.gst ? (1 + (Number(molder.gstPct) || 0) / 100) : 1
@@ -106,16 +106,19 @@ export default function Costing() {
             </div>
           </Card>
 
-          {/* Breakdown */}
-          <Expander title="Breakdown" open>
-            <Row label={`Compound (${fmtNum(product.gPerPiece)} g)`} val={rupee(c.compound)} />
-            {c.regrindSaving > 0 && <Row label={`Regrind reused (${fmtNum(c.effReusePct)}%${c.capped ? ', capped' : ''})`} val={`− ${rupee(c.regrindSaving)}`} />}
-            {c.masterbatch > 0 && <Row label="Masterbatch" val={rupee(c.masterbatch)} />}
-            {includeNut && <Row label="Nut / inserts" val={rupee(c.nut)} />}
-            <Row label={`Job-work (₹${fmtNum(c.shiftCost)}/shift ÷ ${fmtNum(c.piecesPerShift)} pcs)`} val={rupee(c.jobWork)} />
-            {includeScrap && <Row label={`Scrap loading (${fmtNum(scrapPct)}%)`} val={`× ${(1 / (1 - c.W)).toFixed(3)}`} />}
-            <div className="border-t pt-1 mt-1"><Row label="Price per piece" val={rupee(c.price)} bold /></div>
-          </Expander>
+          {/* Breakdown — always visible */}
+          <Card className="p-4">
+            <FieldLabel>Breakdown</FieldLabel>
+            <div className="mt-2 space-y-1">
+              <Row label={`Compound (${fmtNum(product.gPerPiece)} g)`} val={rupee(c.compound)} />
+              {c.regrindSaving > 0 && <Row label={`Regrind reused (${fmtNum(c.effReusePct)}%${c.capped ? ', capped' : ''})`} val={`− ${rupee(c.regrindSaving)}`} />}
+              {c.masterbatch > 0 && <Row label="Masterbatch" val={rupee(c.masterbatch)} />}
+              {includeNut && <Row label="Nut / inserts" val={rupee(c.nut)} />}
+              <Row label={`Job-work (₹${fmtNum(c.shiftCost)}/shift ÷ ${fmtNum(c.piecesPerShift)} pcs)`} val={rupee(c.jobWork)} />
+              {includeScrap && <Row label={`Scrap loading (${fmtNum(scrapPct)}%)`} val={`× ${(1 / (1 - c.W)).toFixed(3)}`} />}
+              <div className="border-t pt-1 mt-1"><Row label="Price per piece" val={rupee(c.price)} bold /></div>
+            </div>
+          </Card>
 
           {/* Assumptions */}
           <Expander title="Assumptions & regrind">
@@ -160,9 +163,9 @@ export default function Costing() {
 function Chip({ on, onClick, children }) {
   return <button onClick={onClick} className={`px-3 py-1.5 rounded-full text-sm font-semibold border ${on ? 'bg-teal-600 text-white border-teal-600' : 'bg-white text-slate-500 border-slate-300'}`}>{on ? '✓ ' : ''}{children}</button>
 }
-function Expander({ title, open, children }) {
+function Expander({ title, children }) {
   return (
-    <details open={open} className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+    <details className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
       <summary className="px-4 py-3 font-bold text-slate-700 text-sm cursor-pointer select-none">{title}</summary>
       <div className="px-4 pb-4 space-y-1">{children}</div>
     </details>

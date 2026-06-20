@@ -19,7 +19,7 @@ function Console({ module, role, onSwitch, userEmail }) {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-24">
-      {isSecondary && <NavBar title={active.title} onHome={() => setActiveKey('more')} />}
+      {isSecondary && <NavBar title={active.title} back="More" onHome={() => setActiveKey('more')} />}
       {active && (
         <active.Component
           role={role} owner={role === 'owner'}
