@@ -72,6 +72,25 @@ export const returnSchema = [
 ]
 
 /**
+ * PURCHASE — raw material bought into the owner's store, with its OWN lot price
+ * (compound/nut prices vary per purchase). Stock on hand is DERIVED:
+ *   stock = Σ purchases − Σ issued to molders + Σ returned by molders.
+ *   kind: 'compound' | 'nut' | 'masterbatch'; materialId points into that master.
+ *   qty: kg (compound/masterbatch) or pieces (nut). rate: ₹/kg or ₹/each.
+ */
+export const purchaseSchema = [
+  field({ name: 'date',       label: 'Date',     type: 'date',   default: todayStr, required: true }),
+  field({ name: 'kind',       label: 'Material', type: 'text',   default: 'compound', required: true }),
+  field({ name: 'materialId', label: 'Item',     type: 'text',   default: '' }),
+  field({ name: 'qty',        label: 'Quantity', type: 'number', default: 0, required: true }),
+  field({ name: 'rate',       label: 'Lot rate', type: 'number', default: 0 }),
+  field({ name: 'supplier',   label: 'Supplier', type: 'text',   default: '' }),
+  field({ name: 'invoice',    label: 'Invoice',  type: 'text',   default: '' }),
+  field({ name: 'note',       label: 'Note',     type: 'text',   default: '' }),
+  field({ name: 'voided',     label: 'Voided',   type: 'toggle', default: false }),
+]
+
+/**
  * PAYMENT — money to a molder. kind: 'payment' (settling dues) | 'advance'.
  */
 export const paymentSchema = [

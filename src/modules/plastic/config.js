@@ -76,6 +76,7 @@ export const KEYS = {
   production:  'plw_production',
   issues:      'plw_issues',
   returns:     'plw_returns',
+  purchases:   'plw_purchases',
   payments:    'plw_payments',
   counter:     'plw_entry_counter',
   compounds:   'plw_compounds',

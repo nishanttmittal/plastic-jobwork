@@ -9,9 +9,15 @@ import { Card } from '../../../core/ui'
 import { todayStr, fmtNum } from '../../../core/utils/format'
 import { allMolderBalances } from '../logic/reconcile'
 import { molderHisab } from '../logic/hisab'
+import { materialStock } from '../logic/stock'
 
 export default function Home({ owner, onOpen }) {
-  const { production, issues, returns, payments, masters } = usePlastic()
+  const { production, issues, returns, purchases, payments, masters } = usePlastic()
+
+  const lowStock = useMemo(
+    () => (owner ? materialStock(masters, { purchases: purchases.list, issues: issues.list, returns: returns.list }).lowItems : []),
+    [owner, masters, purchases.list, issues.list, returns.list],
+  )
 
   const today = todayStr()
   const piecesToday = useMemo(() => production.list
@@ -52,6 +58,18 @@ export default function Home({ owner, onOpen }) {
             <div className="font-bold text-red-700">🚩 {alerts.length} material alert{alerts.length > 1 ? 's' : ''}</div>
             <div className="text-sm text-red-600 mt-1">
               {alerts.map(a => a.molder?.name || 'molder').join(', ')} — used more than issued. Tap to check.
+            </div>
+          </Card>
+        </button>
+      )}
+
+      {/* Low stock */}
+      {owner && lowStock.length > 0 && (
+        <button onClick={() => onOpen && onOpen('stock')} className="w-full text-left">
+          <Card className="p-4 bg-amber-50 border-amber-200">
+            <div className="font-bold text-amber-700">📦 Low stock — reorder soon</div>
+            <div className="text-sm text-amber-700 mt-1">
+              {lowStock.map(i => `${i.name}: ${fmtNum(i.stock)} ${i.unit}`).join(' · ')}
             </div>
           </Card>
         </button>
