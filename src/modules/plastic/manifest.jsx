@@ -1,61 +1,38 @@
 /**
  * Plastic Job Work — module manifest. Implements the shell contract:
- *   id, title, icon, Provider, HomeStats, pages[]
+ *   id, title, icon, Provider, pages[]
+ *
+ * Navigation is organised around the four daily jobs (nav:true → bottom nav):
+ *   🏠 Home · ➕ Record · 👥 Moulders · 🏷️ Costing · ☰ More
+ * Secondary screens (Report, Entries, Masters, Admin) live under More.
  */
-import { PlasticProvider, usePlastic } from './PlasticContext'
-import { todayStr } from '../../core/utils/format'
-import Dashboard from './pages/Dashboard'
-import NewProduction from './pages/NewProduction'
-import IssueCompound from './pages/IssueCompound'
-import ReturnMaterial from './pages/ReturnMaterial'
-import MoulderMaterial from './pages/MoulderMaterial'
+import { PlasticProvider } from './PlasticContext'
+import Home from './pages/Home'
+import Record from './pages/Record'
+import Moulders from './pages/Moulders'
+import Costing from './pages/Costing'
+import More from './pages/More'
+import Dashboard from './pages/Dashboard'   // detailed 15-day report (under More)
 import Entries from './pages/Entries'
-import Pricing from './pages/Pricing'
 import Masters from './pages/Masters'
-import Hisab from './pages/Hisab'
 import Admin from './pages/Admin'
-
-function HomeStats() {
-  const { production, molders } = usePlastic()
-  const today = todayStr()
-  const piecesToday = production.list
-    .filter(e => e.date === today && !e.voided)
-    .reduce((s, e) => s + (e.items || []).reduce((a, it) => a + (Number(it.pieces) || 0), 0), 0)
-  const m = new Date().getMonth(), y = new Date().getFullYear()
-  const thisMonth = production.list.filter(e => {
-    const d = new Date(e.date); return d.getMonth() === m && d.getFullYear() === y && !e.voided
-  }).length
-  const stat = (n, l) => (
-    <div className="bg-white/10 rounded-xl px-4 py-2.5 flex-1 text-center">
-      <div className="text-2xl font-bold">{n}</div>
-      <div className="text-xs text-slate-300 mt-0.5">{l}</div>
-    </div>
-  )
-  return (
-    <div className="mt-4 flex gap-3">
-      {stat(piecesToday.toLocaleString('en-IN'), 'Pieces Today')}
-      {stat(molders.length, 'Molders')}
-      {stat(thisMonth, 'Entries (Month)')}
-    </div>
-  )
-}
 
 export const plasticModule = {
   id: 'plastic',
   title: 'Plastic Job Work',
   icon: '🧩',
   Provider: PlasticProvider,
-  HomeStats,
   pages: [
-    { key: 'dashboard',  title: 'Dashboard',     desc: 'Cost per piece, balances & alerts', icon: '📊', color: 'from-teal-600 to-teal-700',       roles: ['manager', 'owner'], Component: Dashboard },
-    { key: 'production', title: 'New Production', desc: 'Record a shift’s output',        icon: '➕', color: 'from-emerald-600 to-emerald-700', roles: ['manager', 'owner'], Component: NewProduction },
-    { key: 'issue',      title: 'Issue Material', desc: 'Give compound / nuts to a molder',   icon: '📦', color: 'from-cyan-600 to-cyan-700',       roles: ['manager', 'owner'], Component: IssueCompound },
-    { key: 'return',     title: 'Return Material', desc: 'Material the molder hands back',     icon: '↩️', color: 'from-amber-600 to-amber-700',     roles: ['manager', 'owner'], Component: ReturnMaterial },
-    { key: 'material',   title: 'Moulder Material', desc: 'How much is left with each molder', icon: '⚖️', color: 'from-sky-600 to-sky-700',         roles: ['manager', 'owner'], Component: MoulderMaterial },
-    { key: 'entries',    title: 'Entries',       desc: 'See every entry · void',              icon: '📜', color: 'from-slate-500 to-slate-600',     roles: ['manager', 'owner'], Component: Entries },
-    { key: 'pricing',    title: 'Pricing',       desc: 'Per-piece price: ±nut, ±waste',       icon: '🏷️', color: 'from-rose-600 to-rose-700',       roles: ['owner'], Component: Pricing },
-    { key: 'hisab',      title: 'Molder Hisab',  desc: 'Dues, advances, balance, PDF',        icon: '📒', color: 'from-violet-600 to-violet-700',   roles: ['owner'], Component: Hisab },
-    { key: 'masters',    title: 'Masters & Rates', desc: 'Compounds, nuts, molders, products', icon: '🗂️', color: 'from-amber-500 to-amber-600',    roles: ['owner'], Component: Masters },
-    { key: 'admin',      title: 'Admin',         desc: 'Backup, logs, void & reset',          icon: '⚙️', color: 'from-slate-600 to-slate-700',     roles: ['owner'], Component: Admin },
+    // Primary — bottom nav (the four daily jobs + More)
+    { key: 'home',     title: 'Home',     icon: '🏠', nav: true, roles: ['manager', 'owner'], Component: Home },
+    { key: 'record',   title: 'Record',   icon: '➕', nav: true, roles: ['manager', 'owner'], Component: Record },
+    { key: 'moulders', title: 'Moulders', icon: '👥', nav: true, roles: ['manager', 'owner'], Component: Moulders },
+    { key: 'costing',  title: 'Costing',  icon: '🏷️', nav: true, roles: ['owner'], Component: Costing },
+    { key: 'more',     title: 'More',     icon: '☰', nav: true, roles: ['manager', 'owner'], Component: More },
+    // Secondary — opened from More
+    { key: 'report',  title: 'Report',         icon: '📊', desc: '15-day material & rejections', roles: ['manager', 'owner'], Component: Dashboard },
+    { key: 'entries', title: 'Entries',        icon: '📜', desc: 'Every entry · void',           roles: ['manager', 'owner'], Component: Entries },
+    { key: 'masters', title: 'Masters & Rates', icon: '🗂️', desc: 'Compounds, nuts, molders, products', roles: ['owner'], Component: Masters },
+    { key: 'admin',   title: 'Admin',          icon: '⚙️', desc: 'Backup, logs, void & reset',   roles: ['owner'], Component: Admin },
   ],
 }
