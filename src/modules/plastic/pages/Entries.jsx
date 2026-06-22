@@ -1,12 +1,18 @@
 /**
  * Entries — a single chronological list of EVERYTHING entered: material issued,
  * production recorded, and material returned. This is the "did my entry save?"
- * screen. Owner can Void an entry (soft-delete: kept in history, reason logged,
- * never hard-deleted) per the app's audit policy.
+ * screen. Owner can:
+ *   • EDIT an entry in place (fix a wrong date or quantity) — change logged old→new.
+ *     This replaces the old "void + re-enter" workaround that created duplicates.
+ *   • Void an entry (soft-delete: kept in history, reason logged, never hard-deleted).
+ *
+ * Production pieces/rejects are NOT editable here on purpose: each production entry
+ * carries a locked cost snapshot computed from its pieces, so changing pieces in
+ * place would leave the cost stale. To change production pieces, void & re-enter.
  */
 import { useMemo, useState } from 'react'
 import { usePlastic } from '../PlasticContext'
-import { Card, FieldLabel, Select } from '../../../core/ui'
+import { Card, FieldLabel, Select, Button, DateInput, NumberInput } from '../../../core/ui'
 import { fmtDate, fmtNum } from '../../../core/utils/format'
 import { byId } from '../logic/costing'
 
@@ -16,9 +22,26 @@ const TYPE_META = {
   return:     { label: 'Returned',   icon: '↩️', color: 'bg-amber-100 text-amber-700' },
 }
 
+// Which numeric fields are editable per entry type (date is always editable).
+const QTY_FIELDS = {
+  issue:  [
+    { name: 'compoundKg', label: 'Compound (kg)' },
+    { name: 'mbKg',       label: 'Masterbatch (kg)' },
+    { name: 'nutQty',     label: 'Nuts (pcs)' },
+  ],
+  return: [
+    { name: 'compoundKg', label: 'Compound (kg)' },
+    { name: 'regrindKg',  label: 'Regrind (kg)' },
+    { name: 'nutQty',     label: 'Nuts (pcs)' },
+  ],
+  production: [], // date only — see file header
+}
+
 export default function Entries({ owner }) {
   const { production, issues, returns, molders, masters, log } = usePlastic()
   const [filter, setFilter] = useState('all')
+  const [editRow, setEditRow] = useState(null) // the row being edited
+  const [draft, setDraft] = useState({})
 
   const rows = useMemo(() => {
     const mName = (id) => byId(molders, id)?.name || '(molder)'
@@ -65,6 +88,33 @@ export default function Entries({ owner }) {
     log('VOID', `${TYPE_META[r.kind].label} · ${r.molder} · ${r.title} · ${reason.trim()}`, owner ? 'owner' : 'user')
   }
 
+  const openEdit = (r) => {
+    const d = { date: r.date || '' }
+    for (const f of QTY_FIELDS[r.kind]) d[f.name] = r.raw[f.name] ?? ''
+    setDraft(d)
+    setEditRow(r)
+  }
+
+  const saveEdit = () => {
+    const r = editRow
+    if (!r) return
+    if (!draft.date) { window.alert('Date is required.'); return }
+    const patch = { date: draft.date }
+    const changes = []
+    if (draft.date !== r.date) changes.push(`date ${fmtDate(r.date)}→${fmtDate(draft.date)}`)
+    for (const f of QTY_FIELDS[r.kind]) {
+      const next = Number(draft[f.name]) || 0
+      const prev = Number(r.raw[f.name]) || 0
+      patch[f.name] = next
+      if (next !== prev) changes.push(`${f.label} ${fmtNum(prev)}→${fmtNum(next)}`)
+    }
+    if (changes.length === 0) { setEditRow(null); return } // nothing changed
+    patch.editedAt = new Date().toISOString()
+    r.ref.update(r.id, patch)
+    log('EDIT', `${TYPE_META[r.kind].label} · ${r.molder} · ${changes.join(', ')}`, owner ? 'owner' : 'user')
+    setEditRow(null)
+  }
+
   return (
     <div className="max-w-lg mx-auto p-4 space-y-3">
       <Card className="p-3">
@@ -91,19 +141,63 @@ export default function Entries({ owner }) {
                 <div className="flex items-center gap-2">
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${t.color}`}>{t.icon} {t.label}</span>
                   <span className="text-xs text-slate-400">{fmtDate(r.date)}</span>
+                  {r.raw.editedAt && !r.voided && <span className="text-[10px] text-slate-400">(edited)</span>}
                   {r.voided && <span className="text-[10px] font-bold text-red-500">VOIDED</span>}
                 </div>
                 <div className={`font-semibold text-slate-700 text-sm mt-1 ${r.voided ? 'line-through' : ''}`}>{r.molder}</div>
                 <div className="text-xs text-slate-500">{r.title}</div>
               </div>
               {owner && !r.voided && (
-                <button onClick={() => voidEntry(r)}
-                  className="shrink-0 text-xs font-semibold text-red-600 border border-red-200 rounded-lg px-3 py-1.5">Void</button>
+                <div className="shrink-0 flex flex-col gap-1.5">
+                  <button onClick={() => openEdit(r)}
+                    className="text-xs font-semibold text-slate-600 border border-slate-200 rounded-lg px-3 py-1.5">Edit</button>
+                  <button onClick={() => voidEntry(r)}
+                    className="text-xs font-semibold text-red-600 border border-red-200 rounded-lg px-3 py-1.5">Void</button>
+                </div>
               )}
             </div>
           </Card>
         )
       })}
+
+      {editRow && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-end sm:items-center justify-center p-3"
+          onClick={() => setEditRow(null)}>
+          <Card className="p-4 w-full max-w-md space-y-3" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-2">
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${TYPE_META[editRow.kind].color}`}>
+                {TYPE_META[editRow.kind].icon} {TYPE_META[editRow.kind].label}
+              </span>
+              <span className="font-semibold text-slate-700 text-sm">{editRow.molder}</span>
+            </div>
+
+            <div>
+              <FieldLabel>Date</FieldLabel>
+              <DateInput className="mt-1" value={draft.date}
+                onChange={e => setDraft(d => ({ ...d, date: e.target.value }))} />
+            </div>
+
+            {QTY_FIELDS[editRow.kind].map(f => (
+              <div key={f.name}>
+                <FieldLabel>{f.label}</FieldLabel>
+                <NumberInput className="mt-1" inputMode="decimal" value={draft[f.name]}
+                  onChange={e => setDraft(d => ({ ...d, [f.name]: e.target.value }))} />
+              </div>
+            ))}
+
+            {editRow.kind === 'production' && (
+              <p className="text-xs text-slate-500">
+                To change pieces or rejects, void this entry and re-enter it — that keeps the cost accurate.
+              </p>
+            )}
+
+            <div className="flex gap-2 pt-1">
+              <Button className="flex-1" variant="ghost" onClick={() => setEditRow(null)}>Cancel</Button>
+              <Button className="flex-1" onClick={saveEdit}>Save changes</Button>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   )
 }
