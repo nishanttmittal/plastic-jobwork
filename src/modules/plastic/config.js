@@ -144,17 +144,5 @@ export const SEED_PRODUCTS = [
     finishedPieceG: 46.4, // 185.5g / 4 (incl. nut)
     note: '185.5g = 4 caps w/ nuts · runner 5.1g/shot · 45 sec cycle',
   },
-  {
-    id: 'prd_2',
-    name: 'Product 2 (details pending)',
-    compoundId: 'cmp_pp',
-    gPerPiece: 0,
-    netPartG: 0,
-    mbId: '',
-    mbPct: 0,
-    cavities: 1,
-    inserts: [],
-    finishedPieceG: 0,
-    note: 'Fill compound, grams/piece, cavities & nut when available.',
-  },
+  // Add more products via Masters → Products (no code change needed).
 ]
