@@ -94,6 +94,7 @@ export const KEYS = {
 /** Compounds — rate is ₹ per kg. */
 export const SEED_COMPOUNDS = [
   { id: 'cmp_pp', name: 'PP (Polypropylene)', rate: 80 },
+  { id: 'cmp_pp_knob', name: 'PP (knob)', rate: 85 },
 ]
 
 /** Colour masterbatch / additives — rate is ₹ per kg, dosed as % of compound. */
@@ -149,16 +150,16 @@ export const SEED_PRODUCTS = [
   {
     id: 'prd_knob',
     name: 'Knob',
-    compoundId: 'cmp_pp',   // assumed PP — confirm
+    compoundId: 'cmp_pp_knob',  // PP @ ₹85/kg
     gPerPiece: 27.25,       // full shot 109g ÷ 4 (compound/pc incl runner) — for COST
-    netPartG: 15.75,        // (109 − 46 runner) ÷ 4 — net plastic in part — for RECON
+    netPartG: 26.1,         // 4 pcs = 104.4g → 26.1g/pc net plastic — for RECON
     mbId: '',
     mbPct: 0,
     cavities: 4,
     cycleSec: 73,
     inserts: [],            // no nut
-    finishedPieceG: 15.75,  // no nut → finished = net plastic
-    note: 'Chair handle/knob. Measured 23-Jun: full shot 109g, runner 46g → 15.75g/pc. Runner 42% of shot (high).',
+    finishedPieceG: 26.1,   // no nut → finished = net plastic
+    note: 'Chair handle/knob. Measured 23-Jun: 4 pcs=104.4g (26.1g/pc), runner 4.6g/shot (~4%, normal).',
   },
   // Add more products via Masters → Products (no code change needed).
 ]
