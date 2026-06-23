@@ -146,5 +146,19 @@ export const SEED_PRODUCTS = [
     finishedPieceG: 46.4, // 185.5g / 4 (incl. nut)
     note: '185.5g = 4 caps w/ nuts · runner 5.1g/shot · 45 sec cycle',
   },
+  {
+    id: 'prd_knob',
+    name: 'Knob',
+    compoundId: 'cmp_pp',   // assumed PP — confirm
+    gPerPiece: 27.25,       // full shot 109g ÷ 4 (compound/pc incl runner) — for COST
+    netPartG: 15.75,        // (109 − 46 runner) ÷ 4 — net plastic in part — for RECON
+    mbId: '',
+    mbPct: 0,
+    cavities: 4,
+    cycleSec: 73,
+    inserts: [],            // no nut
+    finishedPieceG: 15.75,  // no nut → finished = net plastic
+    note: 'Chair handle/knob. Measured 23-Jun: full shot 109g, runner 46g → 15.75g/pc. Runner 42% of shot (high).',
+  },
   // Add more products via Masters → Products (no code change needed).
 ]
