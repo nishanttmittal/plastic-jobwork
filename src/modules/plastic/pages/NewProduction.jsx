@@ -9,7 +9,7 @@ import {
 } from '../../../core/ui'
 import { todayStr, fmtNum } from '../../../core/utils/format'
 import { entryCosting, byId, jobWorkTotal } from '../logic/costing'
-import { lotsForMolder } from '../logic/lot'
+import { lotsForMolder, runEfficiency } from '../logic/lot'
 import { QUICK_QTYS, REJECT_REASONS } from '../config'
 
 export default function NewProduction({ owner }) {
@@ -146,6 +146,18 @@ export default function NewProduction({ owner }) {
               {' '}vs {fmtNum(shotCheck.made)} entered{shotCheck.off ? ` — ${shotCheck.expected > shotCheck.made ? 'short by ' + fmtNum(shotCheck.expected - shotCheck.made) : 'over by ' + fmtNum(shotCheck.made - shotCheck.expected)}` : ' ✓ match'}
             </div>
           )}
+          {(() => {
+            const eff = runEfficiency(machineShots, hours, byId(products, draft.items[0]?.productId)?.cycleSec)
+            if (!eff) return null
+            const slow = eff.pct != null && eff.pct < 85
+            return (
+              <div className={`mt-1 text-sm rounded-xl px-3 py-2 ${slow ? 'bg-amber-50 text-amber-800' : 'bg-slate-50 text-slate-600'}`}>
+                ⚙️ {fmtNum(eff.actualPerHr)} shots/hr{eff.targetPerHr > 0 && <> (target {fmtNum(eff.targetPerHr)})</>}
+                {eff.pct != null && <> — <b>{fmtNum(eff.pct)}%</b> efficiency</>}
+                {slow && <> · {fmtNum(eff.idleHours)} hr idle ≈ ₹{fmtNum(eff.idleHours * ((Number(byId(molders, molderId)?.shiftRate) || 0) / 12))} 🐢</>}
+              </div>
+            )
+          })()}
         </div>
       </Card>
 

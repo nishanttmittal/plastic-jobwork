@@ -140,6 +140,7 @@ export const SEED_PRODUCTS = [
     mbId: 'mb_black',
     mbPct: 0,            // masterbatch dose PENDING from owner
     cavities: 4,
+    cycleSec: 36,        // rated cycle time (sec) — target for shots/hr efficiency
     inserts: [{ insertId: 'nut_a', qty: 1 }],
     finishedPieceG: 46.4, // 185.5g / 4 (incl. nut)
     note: '185.5g = 4 caps w/ nuts · runner 5.1g/shot · 45 sec cycle',

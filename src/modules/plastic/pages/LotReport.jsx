@@ -66,6 +66,13 @@ export default function LotReport() {
             <Row label="Burnt / purge loss" val={`${fmtNum(r.received.burntKg)} kg`} />
             <Row label="Loose nuts returned" val={`${fmtNum(r.returned.nuts)} pcs`} />
             <Row label="Finished weight (weighed)" val={`${fmtNum(r.received.finishedKg)} kg`} />
+            {r.efficiency && (
+              <div className={`text-sm rounded-xl px-3 py-2 mt-1 ${r.efficiency.pct != null && r.efficiency.pct < 85 ? 'bg-amber-50 text-amber-800' : 'bg-slate-50 text-slate-600'}`}>
+                ⚙️ {fmtNum(r.efficiency.actualPerHr)} shots/hr{r.efficiency.targetPerHr > 0 && ` (target ${fmtNum(r.efficiency.targetPerHr)})`}
+                {r.efficiency.pct != null && ` — ${fmtNum(r.efficiency.pct)}% efficiency`}
+                {r.efficiency.pct != null && r.efficiency.pct < 85 && ` · ~${fmtNum(r.efficiency.idleHours)} hr idle 🐢`}
+              </div>
+            )}
           </Card>
 
           <Card className={`p-4 space-y-2 ${r.flag ? 'bg-red-50 border border-red-200' : 'bg-slate-50'}`}>

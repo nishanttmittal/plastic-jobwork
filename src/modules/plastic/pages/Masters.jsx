@@ -143,7 +143,7 @@ function Products() {
   const del = (id) => setProducts(products.filter(x => x.id !== id))
   const add = () => setProducts([...products, {
     id: makeId('prd'), name: 'New product', compoundId: compounds[0]?.id || '', gPerPiece: 0,
-    netPartG: 0, mbId: '', mbPct: 0, cavities: 1, inserts: [], finishedPieceG: 0, note: '',
+    netPartG: 0, mbId: '', mbPct: 0, cavities: 1, cycleSec: 0, inserts: [], finishedPieceG: 0, note: '',
   }])
 
   // Net plastic + nut(s) should ≈ the weighed finished-piece weight. If all
@@ -179,6 +179,7 @@ function Products() {
           <Field label="Masterbatch"><Select options={mbOpts} value={p.mbId} onChange={e => patch(p.id, { mbId: e.target.value })} className="!py-2 !text-sm" /></Field>
           <Field label="Masterbatch dose %"><Num value={p.mbPct} onChange={v => patch(p.id, { mbPct: v })} /></Field>
           <Field label="Cavities / shot"><Num value={p.cavities} onChange={v => patch(p.id, { cavities: v })} /></Field>
+          <Field label="Cycle time sec (efficiency target)"><Num value={p.cycleSec ?? 0} onChange={v => patch(p.id, { cycleSec: v })} /></Field>
           <Field label="Finished pc weight g (check)"><Num value={p.finishedPieceG} onChange={v => patch(p.id, { finishedPieceG: v })} /></Field>
           {(() => {
             const exp = (Number(p.netPartG) || 0) + nutWtPerPiece(p)
