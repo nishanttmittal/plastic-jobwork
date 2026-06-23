@@ -14,6 +14,7 @@ import Costing from './pages/Costing'
 import More from './pages/More'
 import Dashboard from './pages/Dashboard'   // detailed 15-day report (under More)
 import Entries from './pages/Entries'
+import LotReport from './pages/LotReport'
 import Stock from './pages/Stock'
 import Masters from './pages/Masters'
 import Admin from './pages/Admin'
@@ -32,6 +33,7 @@ export const plasticModule = {
     { key: 'more',     title: 'More',     icon: '☰', nav: true, roles: ['manager', 'owner'], Component: More },
     // Secondary — opened from More
     { key: 'stock',   title: 'Stock',          icon: '📦', desc: 'Raw material, purchases, prices', roles: ['owner'], Component: Stock },
+    { key: 'lotreport', title: 'Lot Report',   icon: '🧾', desc: 'Per-lot sent vs received + cost/pc + PDF', roles: ['owner'], Component: LotReport },
     { key: 'report',  title: 'Report',         icon: '📊', desc: '15-day material & rejections', roles: ['manager', 'owner'], Component: Dashboard },
     { key: 'entries', title: 'Entries',        icon: '📜', desc: 'Every entry · void',           roles: ['manager', 'owner'], Component: Entries },
     { key: 'masters', title: 'Masters & Rates', icon: '🗂️', desc: 'Compounds, nuts, molders, products', roles: ['owner'], Component: Masters },

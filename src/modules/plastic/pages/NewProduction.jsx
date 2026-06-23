@@ -9,14 +9,16 @@ import {
 } from '../../../core/ui'
 import { todayStr, fmtNum } from '../../../core/utils/format'
 import { entryCosting, byId } from '../logic/costing'
+import { lotsForMolder } from '../logic/lot'
 import { QUICK_QTYS, REJECT_REASONS } from '../config'
 
 export default function NewProduction({ owner }) {
-  const { molders, products, masters, createEntry } = usePlastic()
+  const { molders, products, masters, createEntry, issues } = usePlastic()
   const { msg, show } = useToast()
 
   const [date, setDate] = useState(todayStr())
   const [molderId, setMolderId] = useState(molders[0]?.id || '')
+  const [lotNo, setLotNo] = useState('')
   const [shifts, setShifts] = useState('1')
   const [items, setItems] = useState([{ productId: products[0]?.id || '', pieces: '', rejectRows: [] }])
   const [runnerKg, setRunnerKg] = useState('')
@@ -33,7 +35,7 @@ export default function NewProduction({ owner }) {
   const rowsTotal = (rows) => (rows || []).reduce((s, r) => s + (Number(r.qty) || 0), 0)
 
   const draft = useMemo(() => ({
-    date, molderId, shifts: Number(shifts) || 0,
+    date, molderId, lotNo, shifts: Number(shifts) || 0,
     items: items.map(it => {
       const rejectRows = (it.rejectRows || [])
         .map(r => ({ reason: r.reason || '', qty: Number(r.qty) || 0 }))
@@ -42,7 +44,7 @@ export default function NewProduction({ owner }) {
     }),
     runnerKg: Number(runnerKg) || 0, rejectsKg: Number(rejectsKg) || 0,
     burntKg: Number(burntKg) || 0, finishedKg: Number(finishedKg) || 0, note,
-  }), [date, molderId, shifts, items, runnerKg, rejectsKg, burntKg, finishedKg, note])
+  }), [date, molderId, lotNo, shifts, items, runnerKg, rejectsKg, burntKg, finishedKg, note])
 
   const costing = useMemo(() => entryCosting(draft, masters), [draft, masters])
 
@@ -92,6 +94,11 @@ export default function NewProduction({ owner }) {
         <div>
           <FieldLabel>Molder</FieldLabel>
           <Select options={molderOpts} value={molderId} onChange={e => setMolderId(e.target.value)} className="mt-1" />
+        </div>
+        <div>
+          <FieldLabel>Lot (which material this is from)</FieldLabel>
+          <Select className="mt-1" value={lotNo} onChange={e => setLotNo(e.target.value)}
+            options={[{ value: '', label: '— none —' }, ...lotsForMolder(molderId, { issues: issues.list }).map(l => ({ value: l, label: l }))]} />
         </div>
         <div>
           <FieldLabel>Shifts worked (₹/shift fixed)</FieldLabel>

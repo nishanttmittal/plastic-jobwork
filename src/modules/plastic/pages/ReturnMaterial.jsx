@@ -12,6 +12,7 @@ import {
 import { todayStr, fmtNum } from '../../../core/utils/format'
 import { molderBalance } from '../logic/reconcile'
 import { byId } from '../logic/costing'
+import { lotsForMolder } from '../logic/lot'
 
 export default function ReturnMaterial() {
   const { molders, compounds, inserts, masters, issues, production, returns, log } = usePlastic()
@@ -19,6 +20,7 @@ export default function ReturnMaterial() {
 
   const [date, setDate] = useState(todayStr())
   const [molderId, setMolderId] = useState(molders[0]?.id || '')
+  const [lotNo, setLotNo] = useState('')
   const [compoundId, setCompoundId] = useState(compounds[0]?.id || '')
   const [compoundKg, setCompoundKg] = useState('')
   const [regrindKg, setRegrindKg] = useState('')
@@ -39,7 +41,7 @@ export default function ReturnMaterial() {
   const save = () => {
     if (!canSave) { show('Enter a quantity returned', 2500); return }
     returns.insert({
-      date, molderId,
+      date, molderId, lotNo,
       compoundId, compoundKg: Number(compoundKg) || 0,
       regrindKg: Number(regrindKg) || 0,
       insertId, nutQty: Number(nutQty) || 0,
@@ -68,6 +70,11 @@ export default function ReturnMaterial() {
         <div>
           <FieldLabel>Molder</FieldLabel>
           <Select options={molderOpts} value={molderId} onChange={e => setMolderId(e.target.value)} className="mt-1" />
+        </div>
+        <div>
+          <FieldLabel>Lot (which material this is from)</FieldLabel>
+          <Select className="mt-1" value={lotNo} onChange={e => setLotNo(e.target.value)}
+            options={[{ value: '', label: '— none —' }, ...lotsForMolder(molderId, { issues: issues.list }).map(l => ({ value: l, label: l }))]} />
         </div>
       </Card>
 

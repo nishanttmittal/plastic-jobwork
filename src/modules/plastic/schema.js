@@ -22,6 +22,9 @@ export const productionSchema = [
   field({ name: 'entryNo',     label: 'Entry No',   type: 'text',   default: '', required: true }),
   field({ name: 'date',        label: 'Date',       type: 'date',   default: todayStr, required: true }),
   field({ name: 'molderId',    label: 'Molder',     type: 'text',   default: '', required: true }),
+  // Optional material-lot tag (LOT-01…) linking this run to the raw-material
+  // lot it was made from, for the per-lot reconciliation report. '' = unassigned.
+  field({ name: 'lotNo',       label: 'Lot',        type: 'text',   default: '' }),
   field({ name: 'shifts',      label: 'Shifts',     type: 'number', default: 1, required: true }),
   field({ name: 'items',       label: 'Items',      type: 'list',   default: () => [], required: true }),
   field({ name: 'runnerKg',    label: 'Runner returned (kg)', type: 'number', default: 0 }),
@@ -41,6 +44,8 @@ export const productionSchema = [
 export const issueSchema = [
   field({ name: 'date',       label: 'Date',       type: 'date',   default: todayStr, required: true }),
   field({ name: 'molderId',   label: 'Molder',     type: 'text',   default: '', required: true }),
+  // Material-lot tag (LOT-01…) — issuing material opens/extends a lot.
+  field({ name: 'lotNo',      label: 'Lot',        type: 'text',   default: '' }),
   field({ name: 'compoundId', label: 'Compound',   type: 'text',   default: '' }),
   field({ name: 'compoundKg', label: 'Compound (kg)', type: 'number', default: 0 }),
   // which product this compound is meant for — used to estimate expected pieces
@@ -62,6 +67,7 @@ export const issueSchema = [
 export const returnSchema = [
   field({ name: 'date',       label: 'Date',       type: 'date',   default: todayStr, required: true }),
   field({ name: 'molderId',   label: 'Molder',     type: 'text',   default: '', required: true }),
+  field({ name: 'lotNo',      label: 'Lot',        type: 'text',   default: '' }),
   field({ name: 'compoundId', label: 'Compound',   type: 'text',   default: '' }),
   field({ name: 'compoundKg', label: 'Compound returned (kg)', type: 'number', default: 0 }),
   field({ name: 'regrindKg',  label: 'Regrind returned (kg)',  type: 'number', default: 0 }),

@@ -10,6 +10,7 @@ import {
 import { todayStr, fmtNum } from '../../../core/utils/format'
 import { molderBalance } from '../logic/reconcile'
 import { byId } from '../logic/costing'
+import { nextLotNo, lotList } from '../logic/lot'
 
 export default function IssueCompound() {
   const { molders, compounds, masterbatch, inserts, masters, issues, production, returns, log } = usePlastic()
@@ -17,6 +18,8 @@ export default function IssueCompound() {
 
   const [date, setDate] = useState(todayStr())
   const [molderId, setMolderId] = useState(molders[0]?.id || '')
+  const [lotNo, setLotNo] = useState(() => nextLotNo({ issues: issues.list }))
+  const existingLots = lotList({ issues: issues.list }).map(l => l.lotNo)
   const [compoundId, setCompoundId] = useState(compounds[0]?.id || '')
   const [compoundKg, setCompoundKg] = useState('')
   const [productId, setProductId] = useState(masters.products.find(p => (Number(p.gPerPiece) || 0) > 0)?.id || '')
@@ -44,7 +47,7 @@ export default function IssueCompound() {
   const save = () => {
     if (!canSave) { show('Enter a quantity to issue', 2500); return }
     issues.insert({
-      date, molderId,
+      date, molderId, lotNo: lotNo.trim(),
       compoundId, compoundKg: Number(compoundKg) || 0, productId,
       mbId, mbKg: Number(mbKg) || 0,
       insertId, nutQty: Number(nutQty) || 0,
@@ -68,6 +71,13 @@ export default function IssueCompound() {
         <div>
           <FieldLabel>Molder</FieldLabel>
           <Select options={molderOpts} value={molderId} onChange={e => setMolderId(e.target.value)} className="mt-1" />
+        </div>
+        <div>
+          <FieldLabel>Lot</FieldLabel>
+          <input value={lotNo} onChange={e => setLotNo(e.target.value)} list="plw-lots" placeholder="LOT-01"
+            className="w-full border-2 border-slate-200 rounded-xl px-3 py-2 text-sm font-mono mt-1" />
+          <datalist id="plw-lots">{existingLots.map(l => <option key={l} value={l} />)}</datalist>
+          <div className="text-[11px] text-slate-400 mt-1">New material = new lot. Reuse a lot to add more to it.</div>
         </div>
       </Card>
 
