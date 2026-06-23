@@ -76,9 +76,12 @@ export function lotReconciliation(lotNo, masters, data) {
   // ── RECEIVED (pieces + scrap from production tagged to this lot) ──
   let goodPieces = 0, rejectPieces = 0, runnerKg = 0, rejectsKg = 0, burntKg = 0
   let finishedKg = 0, shifts = 0, plasticInProductsKg = 0, nutsUsed = 0
+  let machineShots = 0, machinePieces = 0
   for (const e of prod) {
     runnerKg += num(e.runnerKg); rejectsKg += num(e.rejectsKg); burntKg += num(e.burntKg)
     finishedKg += num(e.finishedKg); shifts += num(e.shifts)
+    machineShots += num(e.machineShots)
+    machinePieces += num(e.machineShots) * (num(byId(products, (e.items || [])[0]?.productId)?.cavities))
     for (const it of e.items || []) {
       const product = byId(products, it.productId)
       const pcs = num(it.pieces), rej = num(it.rejects)
@@ -116,7 +119,7 @@ export function lotReconciliation(lotNo, masters, data) {
     lotNo, molder, molderId, firstDate: issues[0]?.date || prod[0]?.date || '',
     hasData: issues.length + prod.length + rets.length > 0,
     sent: { compoundKg, nutsSent, mbKg, cmpRate, nutRate },
-    received: { goodPieces, rejectPieces, runnerKg, rejectsKg, burntKg, finishedKg, plasticInProductsKg, nutsUsed, shifts },
+    received: { goodPieces, rejectPieces, runnerKg, rejectsKg, burntKg, finishedKg, plasticInProductsKg, nutsUsed, shifts, machineShots, machinePieces },
     returned: { compoundKg: returnedCompoundKg, regrindKg: returnedRegrindKg, nuts: returnedNuts },
     regrindKg, accountedKg, balanceKg, lossPct, yieldPct,
     nutBalance: nutsSent - nutsUsed - returnedNuts,

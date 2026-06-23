@@ -39,6 +39,7 @@ export function buildLotPdf(lotNo, masters, data) {
     startY: (doc.lastAutoTable?.finalY || 40) + 4,
     head: [['RECEIVED back', 'Qty']],
     body: [
+      ...(r.received.machineShots > 0 ? [['Machine shots → pieces', `${fmtNum(r.received.machineShots)} shots = ${fmtNum(r.received.machinePieces)} pcs`]] : []),
       ['Good pieces', `${fmtNum(r.received.goodPieces)} pcs`],
       ['Reject pieces', `${fmtNum(r.received.rejectPieces)} pcs`],
       ['Runner returned', `${fmtNum(r.received.runnerKg)} kg`],

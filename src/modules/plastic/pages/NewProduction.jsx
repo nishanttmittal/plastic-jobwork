@@ -20,6 +20,7 @@ export default function NewProduction({ owner }) {
   const [molderId, setMolderId] = useState(molders[0]?.id || '')
   const [lotNo, setLotNo] = useState('')
   const [shifts, setShifts] = useState('1')
+  const [machineShots, setMachineShots] = useState('')
   const [items, setItems] = useState([{ productId: products[0]?.id || '', pieces: '', rejectRows: [] }])
   const [runnerKg, setRunnerKg] = useState('')
   const [rejectsKg, setRejectsKg] = useState('')
@@ -35,7 +36,7 @@ export default function NewProduction({ owner }) {
   const rowsTotal = (rows) => (rows || []).reduce((s, r) => s + (Number(r.qty) || 0), 0)
 
   const draft = useMemo(() => ({
-    date, molderId, lotNo, shifts: Number(shifts) || 0,
+    date, molderId, lotNo, shifts: Number(shifts) || 0, machineShots: Number(machineShots) || 0,
     items: items.map(it => {
       const rejectRows = (it.rejectRows || [])
         .map(r => ({ reason: r.reason || '', qty: Number(r.qty) || 0 }))
@@ -44,7 +45,21 @@ export default function NewProduction({ owner }) {
     }),
     runnerKg: Number(runnerKg) || 0, rejectsKg: Number(rejectsKg) || 0,
     burntKg: Number(burntKg) || 0, finishedKg: Number(finishedKg) || 0, note,
-  }), [date, molderId, lotNo, shifts, items, runnerKg, rejectsKg, burntKg, finishedKg, note])
+  }), [date, molderId, lotNo, shifts, machineShots, items, runnerKg, rejectsKg, burntKg, finishedKg, note])
+
+  // Machine shot counter cross-check: pieces = shots × cavities is the output
+  // the machine itself logged. Flag if the entered pieces (good + rejects)
+  // don't match what the machine ran.
+  const shotCheck = useMemo(() => {
+    const shots = Number(machineShots) || 0
+    const primary = byId(products, draft.items[0]?.productId)
+    const cavities = Number(primary?.cavities) || 0
+    if (shots <= 0 || cavities <= 0) return null
+    const expected = shots * cavities
+    const made = draft.items.reduce((s, it) => s + (Number(it.pieces) || 0) + (Number(it.rejects) || 0), 0)
+    const off = Math.abs(expected - made) > Math.max(5, expected * 0.02)
+    return { shots, cavities, expected, made, off }
+  }, [machineShots, draft.items, products])
 
   const costing = useMemo(() => entryCosting(draft, masters), [draft, masters])
 
@@ -79,7 +94,7 @@ export default function NewProduction({ owner }) {
     createEntry(draft)
     show('✅ Production saved', 2000)
     setItems([{ productId: products[0]?.id || '', pieces: '', rejectRows: [] }])
-    setRunnerKg(''); setRejectsKg(''); setBurntKg(''); setFinishedKg(''); setNote('')
+    setRunnerKg(''); setRejectsKg(''); setBurntKg(''); setFinishedKg(''); setNote(''); setMachineShots('')
   }
 
   return (
@@ -103,6 +118,16 @@ export default function NewProduction({ owner }) {
         <div>
           <FieldLabel>Shifts worked (₹/shift fixed)</FieldLabel>
           <NumberStepper value={shifts} onChange={setShifts} />
+        </div>
+        <div>
+          <FieldLabel>Machine shots (from machine screen)</FieldLabel>
+          <NumberInput value={machineShots} onChange={e => setMachineShots(e.target.value)} placeholder="0" className="mt-1" />
+          {shotCheck && (
+            <div className={`mt-1 text-sm rounded-xl px-3 py-2 ${shotCheck.off ? 'bg-amber-50 text-amber-800' : 'bg-emerald-50 text-emerald-700'}`}>
+              {shotCheck.off ? '⚠️' : '✓'} {fmtNum(shotCheck.shots)} shots × {shotCheck.cavities} = <b>{fmtNum(shotCheck.expected)}</b> pcs from machine
+              {' '}vs {fmtNum(shotCheck.made)} entered{shotCheck.off ? ` — ${shotCheck.expected > shotCheck.made ? 'short by ' + fmtNum(shotCheck.expected - shotCheck.made) : 'over by ' + fmtNum(shotCheck.made - shotCheck.expected)}` : ' ✓ match'}
+            </div>
+          )}
         </div>
       </Card>
 

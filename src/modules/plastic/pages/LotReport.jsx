@@ -54,6 +54,11 @@ export default function LotReport() {
 
           <Card className="p-4 space-y-2">
             <FieldLabel>📥 Received back</FieldLabel>
+            {r.received.machineShots > 0 && (
+              <div className={`text-sm rounded-xl px-3 py-2 ${Math.abs(r.received.machinePieces - (r.received.goodPieces + r.received.rejectPieces)) > Math.max(5, r.received.machinePieces * 0.02) ? 'bg-amber-50 text-amber-800' : 'bg-emerald-50 text-emerald-700'}`}>
+                🏭 Machine: {fmtNum(r.received.machineShots)} shots → <b>{fmtNum(r.received.machinePieces)}</b> pcs vs {fmtNum(r.received.goodPieces + r.received.rejectPieces)} counted
+              </div>
+            )}
             <Row label="Good pieces" val={`${fmtNum(r.received.goodPieces)} pcs`} strong />
             <Row label="Reject pieces" val={`${fmtNum(r.received.rejectPieces)} pcs`} />
             <Row label="Runner returned" val={`${fmtNum(r.received.runnerKg)} kg`} />

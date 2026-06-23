@@ -26,6 +26,9 @@ export const productionSchema = [
   // lot it was made from, for the per-lot reconciliation report. '' = unassigned.
   field({ name: 'lotNo',       label: 'Lot',        type: 'text',   default: '' }),
   field({ name: 'shifts',      label: 'Shifts',     type: 'number', default: 1, required: true }),
+  // Machine's shot counter reading for this run — pieces = shots × cavities is
+  // the objective output the machine itself logs (0 = not recorded).
+  field({ name: 'machineShots', label: 'Machine shots', type: 'number', default: 0 }),
   field({ name: 'items',       label: 'Items',      type: 'list',   default: () => [], required: true }),
   field({ name: 'runnerKg',    label: 'Runner returned (kg)', type: 'number', default: 0 }),
   field({ name: 'rejectsKg',   label: 'Rejects returned (kg)', type: 'number', default: 0 }),
