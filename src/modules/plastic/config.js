@@ -100,9 +100,10 @@ export const SEED_MASTERBATCH = [
   { id: 'mb_black', name: 'Black Masterbatch', rate: 0 }, // rate PENDING from owner
 ]
 
-/** Inserts / nuts the owner supplies — rate is ₹ each. */
+/** Inserts / nuts the owner supplies — rate is ₹ each; weightG = grams each
+ *  (for the weight reconciliation / nut-count cross-check; 0 = skip checks). */
 export const SEED_INSERTS = [
-  { id: 'nut_a', name: 'Nut A', rate: 1.5 },
+  { id: 'nut_a', name: 'Nut A', rate: 1.5, weightG: 0 },
 ]
 
 /**
@@ -117,19 +118,25 @@ export const SEED_MOLDERS = [
  * Products (recipe / BOM). Adding a product later = one row here or via the
  * Masters screen — no code change.
  *   compoundId        which compound
- *   gPerPiece         grams of compound consumed per piece (incl. runner share)
+ *   gPerPiece         compound CONSUMED per piece incl. runner+purge waste —
+ *                     used for COSTING (what you pay for per piece)
+ *   netPartG          NET plastic actually IN one finished piece — used for
+ *                     material RECONCILIATION (0 = fall back to gPerPiece).
+ *                     Keep these two separate: cost ≠ what's in the part.
  *   mbId, mbPct       masterbatch + dose as % of compound weight (0 = none)
  *   cavities          pieces per machine shot
  *   inserts[]         [{ insertId, qty }] per piece (empty = none)
- *   finishedPieceG    weighed finished-piece weight incl. nut (for accuracy
- *                     cross-check; 0 = skip the check)
+ *   finishedPieceG    weighed finished-piece weight incl. nut (for the
+ *                     weigh-on-receipt accuracy check; 0 = skip the check).
+ *                     Should ≈ netPartG + (nut qty × nut weightG).
  */
 export const SEED_PRODUCTS = [
   {
     id: 'prd_cap',
     name: 'Cap (black)',
     compoundId: 'cmp_pp',
-    gPerPiece: 38.9,
+    gPerPiece: 38.9,    // compound consumed/piece incl. waste — for COST
+    netPartG: 0,        // net plastic in the part — for RECONCILIATION (set after weighing)
     mbId: 'mb_black',
     mbPct: 0,            // masterbatch dose PENDING from owner
     cavities: 4,
@@ -142,6 +149,7 @@ export const SEED_PRODUCTS = [
     name: 'Product 2 (details pending)',
     compoundId: 'cmp_pp',
     gPerPiece: 0,
+    netPartG: 0,
     mbId: '',
     mbPct: 0,
     cavities: 1,

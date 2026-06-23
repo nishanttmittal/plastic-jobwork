@@ -30,38 +30,45 @@ export default function Masters() {
       </div>
       {tab === 'compounds' && <RateList which="compounds" unit="₹/kg" />}
       {tab === 'masterbatch' && <RateList which="masterbatch" unit="₹/kg" />}
-      {tab === 'inserts' && <RateList which="inserts" unit="₹ each" />}
+      {tab === 'inserts' && <RateList which="inserts" unit="₹ each" weight />}
       {tab === 'molders' && <Molders />}
       {tab === 'products' && <Products />}
     </div>
   )
 }
 
-/* ── Simple {name, rate} masters ──────────────────────────────────────────── */
-function RateList({ which, unit }) {
+/* ── Simple {name, rate} masters (nuts also carry weightG when `weight`) ───── */
+function RateList({ which, unit, weight = false }) {
   const ctx = usePlastic()
   const list = ctx[which]
   const setList = ctx[`set${which[0].toUpperCase()}${which.slice(1)}`]
   const [name, setName] = useState('')
   const [rate, setRate] = useState('')
+  const [wt, setWt] = useState('')
 
   const add = () => {
     if (!name.trim()) return
-    setList([...list, { id: makeId(which), name: name.trim(), rate: Number(rate) || 0 }])
-    setName(''); setRate('')
+    const row = { id: makeId(which), name: name.trim(), rate: Number(rate) || 0 }
+    if (weight) row.weightG = Number(wt) || 0
+    setList([...list, row])
+    setName(''); setRate(''); setWt('')
   }
   const patch = (id, p) => setList(list.map(x => x.id === id ? { ...x, ...p } : x))
   const del = (id) => setList(list.filter(x => x.id !== id))
 
   return (
     <Card className="p-4 space-y-3">
-      <FieldLabel>{which} ({unit})</FieldLabel>
+      <FieldLabel>{which} ({unit}{weight ? ' · weight g each' : ''})</FieldLabel>
       {list.map(x => (
         <div key={x.id} className="flex gap-2 items-center">
           <input value={x.name} onChange={e => patch(x.id, { name: e.target.value })}
             className="flex-1 border-2 border-slate-200 rounded-xl px-3 py-2 text-sm" />
           <input type="number" value={x.rate} onChange={e => patch(x.id, { rate: Number(e.target.value) || 0 })}
-            className="w-24 border-2 border-slate-200 rounded-xl px-3 py-2 text-sm font-mono text-right" />
+            className="w-20 border-2 border-slate-200 rounded-xl px-3 py-2 text-sm font-mono text-right" placeholder={unit} />
+          {weight && (
+            <input type="number" value={x.weightG ?? 0} onChange={e => patch(x.id, { weightG: Number(e.target.value) || 0 })}
+              className="w-16 border-2 border-slate-200 rounded-xl px-2 py-2 text-sm font-mono text-right" title="grams each" placeholder="g" />
+          )}
           <button onClick={() => del(x.id)} className="text-red-500 text-lg px-1">🗑</button>
         </div>
       ))}
@@ -69,7 +76,11 @@ function RateList({ which, unit }) {
         <input value={name} onChange={e => setName(e.target.value)} placeholder="New name"
           className="flex-1 border-2 border-slate-300 rounded-xl px-3 py-2 text-sm" />
         <input type="number" value={rate} onChange={e => setRate(e.target.value)} placeholder={unit}
-          className="w-24 border-2 border-slate-300 rounded-xl px-3 py-2 text-sm font-mono text-right" />
+          className="w-20 border-2 border-slate-300 rounded-xl px-3 py-2 text-sm font-mono text-right" />
+        {weight && (
+          <input type="number" value={wt} onChange={e => setWt(e.target.value)} placeholder="g"
+            className="w-16 border-2 border-slate-300 rounded-xl px-2 py-2 text-sm font-mono text-right" />
+        )}
         <Button size="sm" onClick={add}>Add</Button>
       </div>
     </Card>
@@ -132,8 +143,15 @@ function Products() {
   const del = (id) => setProducts(products.filter(x => x.id !== id))
   const add = () => setProducts([...products, {
     id: makeId('prd'), name: 'New product', compoundId: compounds[0]?.id || '', gPerPiece: 0,
-    mbId: '', mbPct: 0, cavities: 1, inserts: [], finishedPieceG: 0, note: '',
+    netPartG: 0, mbId: '', mbPct: 0, cavities: 1, inserts: [], finishedPieceG: 0, note: '',
   }])
+
+  // Net plastic + nut(s) should ≈ the weighed finished-piece weight. If all
+  // three are filled and they disagree by >5%, something's mis-measured.
+  const nutWtPerPiece = (p) => (p.inserts || []).reduce((s, ins) => {
+    const m = inserts.find(i => i.id === ins.insertId)
+    return s + (Number(ins.qty) || 0) * (Number(m?.weightG) || 0)
+  }, 0)
 
   const cmpOpts = compounds.map(c => ({ value: c.id, label: c.name }))
   const mbOpts = [{ value: '', label: '— none —' }, ...masterbatch.map(m => ({ value: m.id, label: m.name }))]
@@ -156,11 +174,24 @@ function Products() {
             <button onClick={() => del(p.id)} className="text-red-500 text-lg px-1">🗑</button>
           </div>
           <Field label="Compound"><Select options={cmpOpts} value={p.compoundId} onChange={e => patch(p.id, { compoundId: e.target.value })} className="!py-2 !text-sm" /></Field>
-          <Field label="Compound g/piece"><Num value={p.gPerPiece} onChange={v => patch(p.id, { gPerPiece: v })} /></Field>
+          <Field label="Compound g/piece (COST, incl. waste)"><Num value={p.gPerPiece} onChange={v => patch(p.id, { gPerPiece: v })} /></Field>
+          <Field label="Net plastic g/piece (RECON, in part)"><Num value={p.netPartG ?? 0} onChange={v => patch(p.id, { netPartG: v })} /></Field>
           <Field label="Masterbatch"><Select options={mbOpts} value={p.mbId} onChange={e => patch(p.id, { mbId: e.target.value })} className="!py-2 !text-sm" /></Field>
           <Field label="Masterbatch dose %"><Num value={p.mbPct} onChange={v => patch(p.id, { mbPct: v })} /></Field>
           <Field label="Cavities / shot"><Num value={p.cavities} onChange={v => patch(p.id, { cavities: v })} /></Field>
           <Field label="Finished pc weight g (check)"><Num value={p.finishedPieceG} onChange={v => patch(p.id, { finishedPieceG: v })} /></Field>
+          {(() => {
+            const exp = (Number(p.netPartG) || 0) + nutWtPerPiece(p)
+            const fin = Number(p.finishedPieceG) || 0
+            if (!(exp > 0 && fin > 0)) return null
+            const off = Math.abs(fin - exp) > exp * 0.05
+            return (
+              <div className={`text-xs rounded-lg px-3 py-2 ${off ? 'bg-amber-50 text-amber-800' : 'bg-emerald-50 text-emerald-700'}`}>
+                {off ? '⚠️' : '✓'} Net plastic {(Number(p.netPartG) || 0).toFixed(1)}g + nut {nutWtPerPiece(p).toFixed(1)}g = {exp.toFixed(1)}g vs finished {fin.toFixed(1)}g
+                {off ? ' — re-check a weight.' : ''}
+              </div>
+            )
+          })()}
 
           <div className="pt-1">
             <span className="text-xs font-bold text-slate-500 uppercase">Nuts / inserts per piece</span>

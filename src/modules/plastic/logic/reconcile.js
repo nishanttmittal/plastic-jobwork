@@ -21,6 +21,23 @@ export function nutsPerPiece(product) {
   return (product.inserts || []).reduce((s, i) => s + (Number(i.qty) || 0), 0)
 }
 
+/**
+ * NET plastic actually in one finished piece (grams) — used for MATERIAL
+ * reconciliation (how much of the issued compound ended up in product).
+ *
+ * This is deliberately DIFFERENT from `gPerPiece`, which is the compound
+ * *consumed* per piece INCLUDING runner + purge waste and is used for COSTING.
+ * Using gPerPiece here over-counts (it double-charges the runner/rejects that
+ * are also added back separately) and raised false 🚩 shortage flags.
+ *
+ * Falls back to gPerPiece when netPartG isn't set, so products that haven't
+ * been weighed yet reconcile exactly as before (backward compatible).
+ */
+export function netPlasticPerPieceG(product) {
+  const net = Number(product?.netPartG) || 0
+  return net > 0 ? net : (Number(product?.gPerPiece) || 0)
+}
+
 const active = (rows) => (rows || []).filter(r => !r.voided)
 
 /**
@@ -57,7 +74,7 @@ export function molderBalance(molderId, data) {
       const pcs = Number(it.pieces) || 0
       const rej = Number(it.rejects) || 0
       goodPieces += pcs
-      plasticInProductsKg += (pcs * (Number(product?.gPerPiece) || 0)) / 1000
+      plasticInProductsKg += (pcs * netPlasticPerPieceG(product)) / 1000
       nutsUsed += (pcs + rej) * nutsPerPiece(product)
     }
   }
