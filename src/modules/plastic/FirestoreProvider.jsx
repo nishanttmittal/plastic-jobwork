@@ -41,6 +41,7 @@ export function FirestoreProvider({ children }) {
   const [inserts, setInsertsState] = useState(SEED_INSERTS)
   const [molders, setMoldersState] = useState(SEED_MOLDERS)
   const [products, setProductsState] = useState(SEED_PRODUCTS)
+  const [lotLocks, setLotLocksState] = useState([])
   const [counter, setCounter] = useState(0)
 
   useEffect(() => {
@@ -69,6 +70,7 @@ export function FirestoreProvider({ children }) {
         unsubs.push(onSnapshot(paths.inserts(), (s) => metaList(s, setInsertsState)))
         unsubs.push(onSnapshot(paths.molders(), (s) => metaList(s, setMoldersState)))
         unsubs.push(onSnapshot(paths.products(), (s) => metaList(s, setProductsState)))
+        unsubs.push(onSnapshot(paths.lotLocks(), (s) => metaList(s, setLotLocksState)))
         unsubs.push(onSnapshot(paths.counter(), (s) => setCounter(s.exists() ? (s.data().value || 0) : 0)))
       })
       .catch((e) => { done = true; clearTimeout(timer); setError(e.message); setTimedOut(true) })
@@ -109,6 +111,7 @@ export function FirestoreProvider({ children }) {
   const setInserts = useCallback((list) => { setInsertsState(list); setDoc(paths.inserts(), { list }) }, [])
   const setMolders = useCallback((list) => { setMoldersState(list); setDoc(paths.molders(), { list }) }, [])
   const setProducts = useCallback((list) => { setProductsState(list); setDoc(paths.products(), { list }) }, [])
+  const setLotLocks = useCallback((list) => { setLotLocksState(list); setDoc(paths.lotLocks(), { list }) }, [])
 
   const masters = useMemo(() => ({ compounds, masterbatch, inserts, molders, products }),
     [compounds, masterbatch, inserts, molders, products])
@@ -149,6 +152,7 @@ export function FirestoreProvider({ children }) {
     production: productionApi, issues: issuesApi, returns: returnsApi, purchases: purchasesApi, payments: paymentsApi, logs: logsApi, users: usersApi,
     compounds, setCompounds, masterbatch, setMasterbatch, inserts, setInserts,
     molders, setMolders, products, setProducts,
+    lotLocks, setLotLocks,
     masters, createEntry, peekNextEntryNo, log,
     cloud: { enabled: true, connected: !error, error },
   }

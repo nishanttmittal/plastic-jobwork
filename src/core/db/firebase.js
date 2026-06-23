@@ -72,6 +72,7 @@ export const paths = {
   inserts: () => doc(db, 'apps', APP_NS, 'meta', 'inserts'),
   molders: () => doc(db, 'apps', APP_NS, 'meta', 'molders'),
   products: () => doc(db, 'apps', APP_NS, 'meta', 'products'),
+  lotLocks: () => doc(db, 'apps', APP_NS, 'meta', 'lotlocks'),
 }
 
 /** Ensure there is a signed-in user (anonymous by default). Resolves to uid. */

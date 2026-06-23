@@ -58,7 +58,7 @@ export default function Stock() {
     const setter = item.kind === 'nut' ? setInserts : setCompounds
     setter(list.map(x => x.id === item.id ? { ...x, reorder: Number(v) || 0 } : x))
   }
-  const useLatestRate = (item) => {
+  const applyLatestRate = (item) => {
     const list = item.kind === 'nut' ? inserts : compounds
     const setter = item.kind === 'nut' ? setInserts : setCompounds
     setter(list.map(x => x.id === item.id ? { ...x, rate: item.latest } : x))
@@ -94,7 +94,7 @@ export default function Stock() {
               <div>avg ₹{fmtNum(item.avg)} · latest ₹{fmtNum(item.latest)}</div>
               <div className="mt-0.5">costing rate ₹{fmtNum(item.masterRate)}</div>
               {item.latest > 0 && item.latest !== item.masterRate && (
-                <button onClick={() => useLatestRate(item)} className="mt-1 text-teal-700 font-semibold underline">use latest as rate</button>
+                <button onClick={() => applyLatestRate(item)} className="mt-1 text-teal-700 font-semibold underline">use latest as rate</button>
               )}
             </div>
           </div>

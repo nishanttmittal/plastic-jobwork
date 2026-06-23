@@ -12,10 +12,10 @@ import {
 import { todayStr, fmtNum } from '../../../core/utils/format'
 import { molderBalance } from '../logic/reconcile'
 import { byId } from '../logic/costing'
-import { lotsForMolder } from '../logic/lot'
+import { lotsForMolder, isLotFinalized } from '../logic/lot'
 
 export default function ReturnMaterial() {
-  const { molders, compounds, inserts, masters, issues, production, returns, log } = usePlastic()
+  const { molders, compounds, inserts, masters, issues, production, returns, log, lotLocks } = usePlastic()
   const { msg, show } = useToast()
 
   const [date, setDate] = useState(todayStr())
@@ -40,6 +40,7 @@ export default function ReturnMaterial() {
 
   const save = () => {
     if (!canSave) { show('Enter a quantity returned', 2500); return }
+    if (isLotFinalized(lotNo, lotLocks)) { show('🔒 That lot is finalized — reopen it first', 3000); return }
     returns.insert({
       date, molderId, lotNo,
       compoundId, compoundKg: Number(compoundKg) || 0,

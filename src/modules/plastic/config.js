@@ -86,6 +86,7 @@ export const KEYS = {
   products:    'plw_products',
   users:       'plw_users',
   logs:        'plw_logs',
+  lotLocks:    'plw_lotlocks',
 }
 
 /* ───────────────────────── SEED MASTERS (editable in-app) ───────────────── */
@@ -111,7 +112,7 @@ export const SEED_INSERTS = [
  * gst: whether they bill GST on top; gstPct used only when gst is true.
  */
 export const SEED_MOLDERS = [
-  { id: 'mld_1', name: 'Molder 1 (180-ton)', shiftRate: 5000, gst: false, gstPct: 12 },
+  { id: 'mld_1', name: 'Molder 1 (180-ton)', shiftRate: 5000, gst: false, gstPct: 12, payMode: 'time', pieceRate: 0 },
 ]
 
 /**

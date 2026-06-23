@@ -29,6 +29,13 @@ export const productionSchema = [
   // Actual hours the machine ran this entry. When > 0, job-work is charged
   // pro-rata (hours ÷ 12 × shift-rate) instead of by whole shifts. 0 = use shifts.
   field({ name: 'hours',       label: 'Hours run',  type: 'number', default: 0 }),
+  // Pay method for this entry: '' = use molder default, else 'time' | 'piece'.
+  field({ name: 'payMode',     label: 'Pay mode',   type: 'text',   default: '' }),
+  field({ name: 'pieceRate',   label: 'Piece rate', type: 'number', default: 0 }),
+  // Set when the entry's lot is finalized: pay frozen so rate changes can't
+  // alter settled dues. Cleared on reopen.
+  field({ name: 'locked',        label: 'Locked',         type: 'toggle', default: false }),
+  field({ name: 'lockedJobWork', label: 'Frozen job-work', type: 'number', default: 0 }),
   // Machine's shot counter reading for this run — pieces = shots × cavities is
   // the objective output the machine itself logs (0 = not recorded).
   field({ name: 'machineShots', label: 'Machine shots', type: 'number', default: 0 }),

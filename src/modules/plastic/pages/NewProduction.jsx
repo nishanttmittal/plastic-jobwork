@@ -9,11 +9,11 @@ import {
 } from '../../../core/ui'
 import { todayStr, fmtNum } from '../../../core/utils/format'
 import { entryCosting, byId, jobWorkTotal } from '../logic/costing'
-import { lotsForMolder, runEfficiency } from '../logic/lot'
+import { lotsForMolder, runEfficiency, isLotFinalized } from '../logic/lot'
 import { QUICK_QTYS, REJECT_REASONS } from '../config'
 
 export default function NewProduction({ owner }) {
-  const { molders, products, masters, createEntry, issues } = usePlastic()
+  const { molders, products, masters, createEntry, issues, lotLocks } = usePlastic()
   const { msg, show } = useToast()
 
   const [date, setDate] = useState(todayStr())
@@ -21,6 +21,8 @@ export default function NewProduction({ owner }) {
   const [lotNo, setLotNo] = useState('')
   const [shifts, setShifts] = useState('1')
   const [hours, setHours] = useState('')
+  const [payMode, setPayMode] = useState('')      // '' = use molder default
+  const [pieceRate, setPieceRate] = useState('')
   const [machineShots, setMachineShots] = useState('')
   const [items, setItems] = useState([{ productId: products[0]?.id || '', pieces: '', rejectRows: [] }])
   const [runnerKg, setRunnerKg] = useState('')
@@ -37,7 +39,8 @@ export default function NewProduction({ owner }) {
   const rowsTotal = (rows) => (rows || []).reduce((s, r) => s + (Number(r.qty) || 0), 0)
 
   const draft = useMemo(() => ({
-    date, molderId, lotNo, shifts: Number(shifts) || 0, hours: Number(hours) || 0, machineShots: Number(machineShots) || 0,
+    date, molderId, lotNo, shifts: Number(shifts) || 0, hours: Number(hours) || 0,
+    payMode, pieceRate: Number(pieceRate) || 0, machineShots: Number(machineShots) || 0,
     items: items.map(it => {
       const rejectRows = (it.rejectRows || [])
         .map(r => ({ reason: r.reason || '', qty: Number(r.qty) || 0 }))
@@ -46,7 +49,9 @@ export default function NewProduction({ owner }) {
     }),
     runnerKg: Number(runnerKg) || 0, rejectsKg: Number(rejectsKg) || 0,
     burntKg: Number(burntKg) || 0, finishedKg: Number(finishedKg) || 0, note,
-  }), [date, molderId, lotNo, shifts, hours, machineShots, items, runnerKg, rejectsKg, burntKg, finishedKg, note])
+  }), [date, molderId, lotNo, shifts, hours, payMode, pieceRate, machineShots, items, runnerKg, rejectsKg, burntKg, finishedKg, note])
+
+  const effectiveMode = payMode || byId(molders, molderId)?.payMode || 'time'
 
   // Machine shot counter cross-check: pieces = shots × cavities is the output
   // the machine itself logged. Flag if the entered pieces (good + rejects)
@@ -92,10 +97,15 @@ export default function NewProduction({ owner }) {
 
   const save = () => {
     if (!canSave) { show('Pick a molder and enter pieces', 2500); return }
+    if (isLotFinalized(lotNo, lotLocks)) { show('🔒 That lot is finalized — reopen it first', 3000); return }
+    if (effectiveMode === 'piece') {
+      const rate = Number(pieceRate) > 0 ? Number(pieceRate) : (Number(byId(molders, molderId)?.pieceRate) || 0)
+      if (rate <= 0) { show('Set a piece rate (it is ₹0) before saving', 3000); return }
+    }
     createEntry(draft)
     show('✅ Production saved', 2000)
     setItems([{ productId: products[0]?.id || '', pieces: '', rejectRows: [] }])
-    setRunnerKg(''); setRejectsKg(''); setBurntKg(''); setFinishedKg(''); setNote(''); setMachineShots(''); setHours('')
+    setRunnerKg(''); setRejectsKg(''); setBurntKg(''); setFinishedKg(''); setNote(''); setMachineShots(''); setHours(''); setPieceRate(''); setPayMode('')
   }
 
   return (
@@ -117,26 +127,67 @@ export default function NewProduction({ owner }) {
             options={[{ value: '', label: '— none —' }, ...lotsForMolder(molderId, { issues: issues.list }).map(l => ({ value: l, label: l }))]} />
         </div>
         <div>
-          <FieldLabel>Shifts worked (whole 12-hr shifts)</FieldLabel>
-          <NumberStepper value={shifts} onChange={setShifts} />
+          <FieldLabel>Pay method (moulder)</FieldLabel>
+          <div className="flex gap-2 mt-1">
+            {[['time', '⏱️ Time'], ['piece', '🔢 Per piece']].map(([m, lbl]) => (
+              <button key={m} type="button" onClick={() => setPayMode(m)}
+                className={`flex-1 rounded-xl py-2 text-sm font-semibold border-2 ${effectiveMode === m ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-slate-200 text-slate-400'}`}>{lbl}</button>
+            ))}
+          </div>
         </div>
-        <div>
-          <FieldLabel>OR exact hours run (pro-rata pay)</FieldLabel>
-          <NumberInput value={hours} onChange={e => setHours(e.target.value)} placeholder="e.g. 42.5" className="mt-1" />
-          {(() => {
-            const molder = byId(molders, molderId)
-            const rate = Number(molder?.shiftRate) || 0
-            const hrs = Number(hours) || 0
-            if (!(hrs > 0 && rate > 0)) return null
-            const amt = jobWorkTotal({ hours: hrs }, molder)
-            return (
-              <div className="mt-1 bg-teal-50 text-teal-800 rounded-xl px-3 py-2 text-sm font-semibold">
-                💰 Payable: {fmtNum(hrs)} hrs ÷ 12 × ₹{fmtNum(rate)} = <b>₹{fmtNum(amt)}</b>
-                <span className="font-normal text-teal-600"> ({(hrs / 12).toFixed(2)} shifts)</span>
-              </div>
-            )
-          })()}
-        </div>
+
+        {effectiveMode === 'time' ? (
+          <>
+            <div>
+              <FieldLabel>Shifts worked (whole 12-hr shifts)</FieldLabel>
+              <NumberStepper value={shifts} onChange={setShifts} />
+            </div>
+            <div>
+              <FieldLabel>OR exact hours run (pro-rata pay)</FieldLabel>
+              <NumberInput value={hours} onChange={e => setHours(e.target.value)} placeholder="e.g. 42.5" className="mt-1" />
+              {(() => {
+                const molder = byId(molders, molderId)
+                const rate = Number(molder?.shiftRate) || 0
+                const hrs = Number(hours) || 0
+                if (!(hrs > 0 && rate > 0)) return null
+                const amt = jobWorkTotal({ hours: hrs }, molder)
+                return (
+                  <div className="mt-1 bg-teal-50 text-teal-800 rounded-xl px-3 py-2 text-sm font-semibold">
+                    💰 Payable: {fmtNum(hrs)} hrs ÷ 12 × ₹{fmtNum(rate)} = <b>₹{fmtNum(amt)}</b>
+                    <span className="font-normal text-teal-600"> ({(hrs / 12).toFixed(2)} shifts)</span>
+                  </div>
+                )
+              })()}
+            </div>
+          </>
+        ) : (
+          <div>
+            <FieldLabel>Piece rate ₹ (blank = moulder default)</FieldLabel>
+            <NumberInput value={pieceRate} onChange={e => setPieceRate(e.target.value)}
+              placeholder={`default ₹${fmtNum(byId(molders, molderId)?.pieceRate || 0)}`} className="mt-1" />
+            {(() => {
+              const molder = byId(molders, molderId)
+              const rate = Number(pieceRate) > 0 ? Number(pieceRate) : (Number(molder?.pieceRate) || 0)
+              if (rate <= 0) return (
+                <div className="mt-1 bg-red-50 text-red-700 rounded-xl px-3 py-2 text-sm font-semibold">
+                  ⚠️ Piece rate is ₹0 — set a rate here or in Masters, else pay = ₹0.
+                </div>
+              )
+              if (totalPieces <= 0) return null
+              return (
+                <div className="mt-1 bg-teal-50 text-teal-800 rounded-xl px-3 py-2 text-sm font-semibold">
+                  💰 Payable: {fmtNum(totalPieces)} pcs × ₹{fmtNum(rate)} = <b>₹{fmtNum(jobWorkTotal(draft, molder))}</b>
+                </div>
+              )
+            })()}
+          </div>
+        )}
+        {!payMode && (
+          <div className="text-[11px] text-slate-400 -mt-1">Using moulder default ({effectiveMode === 'piece' ? 'per piece' : 'time'}). Tap above to override.</div>
+        )}
+        {isLotFinalized(lotNo, lotLocks) && (
+          <div className="bg-amber-50 text-amber-800 rounded-xl px-3 py-2 text-sm font-semibold">🔒 {lotNo} is finalized — reopen it in Lot Report to add entries.</div>
+        )}
         <div>
           <FieldLabel>Machine shots (from machine screen)</FieldLabel>
           <NumberInput value={machineShots} onChange={e => setMachineShots(e.target.value)} placeholder="0" className="mt-1" />

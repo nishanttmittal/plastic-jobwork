@@ -10,7 +10,7 @@ import { useCollection, useSingleton } from '../../core/hooks/useCollection'
 import {
   productionRepo, issuesRepo, returnsRepo, purchasesRepo, paymentsRepo, logsRepo, usersRepo,
   compoundsStore, masterbatchStore, insertsStore, moldersStore, productsStore,
-  counterStore,
+  counterStore, lotLocksStore,
 } from './data'
 import { formatEntryNo, entryCosting } from './logic/costing'
 import { isFirebaseConfigured } from '../../core/db/firebaseConfig'
@@ -41,6 +41,7 @@ function LocalPlasticProvider({ children }) {
   const [molders, setMolders]         = useSingleton(moldersStore)
   const [products, setProducts]       = useSingleton(productsStore)
   const [counter, setCounter]         = useSingleton(counterStore)
+  const [lotLocks, setLotLocks]       = useSingleton(lotLocksStore)
 
   const masters = useMemo(
     () => ({ compounds, masterbatch, inserts, molders, products }),
@@ -90,6 +91,7 @@ function LocalPlasticProvider({ children }) {
     inserts, setInserts,
     molders, setMolders,
     products, setProducts,
+    lotLocks, setLotLocks,
     masters,
     createEntry, peekNextEntryNo, log,
     cloud: { enabled: isFirebaseConfigured },

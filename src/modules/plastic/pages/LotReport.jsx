@@ -7,11 +7,13 @@ import { useMemo, useState } from 'react'
 import { usePlastic } from '../PlasticContext'
 import { Card, FieldLabel, Select, Button } from '../../../core/ui'
 import { fmtDate, fmtNum } from '../../../core/utils/format'
-import { lotList, lotReconciliation } from '../logic/lot'
+import { lotList, lotReconciliation, isLotFinalized } from '../logic/lot'
+import { jobWorkTotal, byId } from '../logic/costing'
 import { buildLotPdf } from '../logic/lotPdf'
+import { ADMIN_PASSWORD } from '../config'
 
 export default function LotReport() {
-  const { masters, issues, production, returns } = usePlastic()
+  const { masters, issues, production, returns, lotLocks, setLotLocks, log } = usePlastic()
   const data = useMemo(() => ({ issues: issues.list, production: production.list, returns: returns.list }),
     [issues.list, production.list, returns.list])
 
@@ -20,6 +22,30 @@ export default function LotReport() {
   const r = useMemo(() => (lotNo ? lotReconciliation(lotNo, masters, data) : null), [lotNo, masters, data])
 
   const exportPdf = () => buildLotPdf(lotNo, masters, data).save(`Lot-${lotNo}.pdf`)
+
+  const finalized = isLotFinalized(lotNo, lotLocks)
+  const finalize = () => {
+    if (window.prompt('Finalize (lock) this lot? Entries can no longer be edited and the pay is frozen.\nAdmin password:') !== ADMIN_PASSWORD) {
+      window.alert('Wrong password.'); return
+    }
+    // Freeze pay on every production entry in this lot so a later rate change
+    // can't alter the settled dues.
+    production.list.filter(p => (p.lotNo || '') === lotNo && !p.voided).forEach(e => {
+      production.update(e.id, { locked: true, lockedJobWork: jobWorkTotal(e, byId(masters.molders, e.molderId)) })
+    })
+    setLotLocks([...(lotLocks || []), { lotNo, finalizedAt: new Date().toISOString(), by: 'owner' }])
+    log('LOT_FINALIZE', `${lotNo} finalized (locked, pay frozen)`, 'owner')
+  }
+  const reopen = () => {
+    if (window.prompt('Reopen this lot for editing?\nAdmin password:') !== ADMIN_PASSWORD) {
+      window.alert('Wrong password.'); return
+    }
+    production.list.filter(p => (p.lotNo || '') === lotNo).forEach(e => {
+      if (e.locked) production.update(e.id, { locked: false, lockedJobWork: 0 })
+    })
+    setLotLocks((lotLocks || []).filter(l => l.lotNo !== lotNo))
+    log('LOT_REOPEN', `${lotNo} reopened`, 'owner')
+  }
 
   if (lots.length === 0) {
     return (
@@ -100,6 +126,15 @@ export default function LotReport() {
           </Card>
 
           <Button size="lg" className="w-full" onClick={exportPdf}>📄 Export PDF (share on WhatsApp)</Button>
+
+          {finalized ? (
+            <div className="bg-slate-100 rounded-2xl p-3 text-center space-y-2">
+              <div className="text-sm font-semibold text-slate-700">🔒 Lot finalized — entries are locked</div>
+              <Button variant="ghost" className="w-full" onClick={reopen}>Reopen for editing</Button>
+            </div>
+          ) : (
+            <Button variant="ghost" className="w-full" onClick={finalize}>🔒 Finalize hisab (lock this lot)</Button>
+          )}
         </>
       )}
     </div>

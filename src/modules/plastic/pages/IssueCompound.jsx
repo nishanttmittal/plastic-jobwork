@@ -10,10 +10,10 @@ import {
 import { todayStr, fmtNum } from '../../../core/utils/format'
 import { molderBalance } from '../logic/reconcile'
 import { byId } from '../logic/costing'
-import { nextLotNo, lotList } from '../logic/lot'
+import { nextLotNo, lotList, isLotFinalized } from '../logic/lot'
 
 export default function IssueCompound() {
-  const { molders, compounds, masterbatch, inserts, masters, issues, production, returns, log } = usePlastic()
+  const { molders, compounds, masterbatch, inserts, masters, issues, production, returns, log, lotLocks } = usePlastic()
   const { msg, show } = useToast()
 
   const [date, setDate] = useState(todayStr())
@@ -46,6 +46,7 @@ export default function IssueCompound() {
 
   const save = () => {
     if (!canSave) { show('Enter a quantity to issue', 2500); return }
+    if (isLotFinalized(lotNo.trim(), lotLocks)) { show('🔒 That lot is finalized — reopen it first', 3000); return }
     issues.insert({
       date, molderId, lotNo: lotNo.trim(),
       compoundId, compoundKg: Number(compoundKg) || 0, productId,

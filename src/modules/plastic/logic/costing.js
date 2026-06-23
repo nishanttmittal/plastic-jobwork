@@ -55,10 +55,30 @@ export function shiftEquivalents(entry) {
   return hours > 0 ? hours / 12 : (Number(entry?.shifts) || 0)
 }
 
-/** Job-work cost for an entry = shift-equivalents × molder shift-rate (+GST). */
+/** Pay mode in force for an entry: explicit override, else molder default, else time. */
+export function payModeOf(entry, molder) {
+  return entry?.payMode || molder?.payMode || 'time'
+}
+
+/**
+ * Job-work cost for an entry. Two ways, selectable per molder or per entry:
+ *   • time  — shift-equivalents × shift-rate (whole shifts OR pro-rata hours)
+ *   • piece — good pieces × piece-rate
+ * (+GST when the molder bills it.)
+ */
 export function jobWorkTotal(entry, molder) {
+  // Finalized entries carry a frozen pay value so later rate changes can't
+  // alter a settled lot's dues. (Cleared again on reopen.)
+  if (entry?.locked) return round2(Number(entry.lockedJobWork) || 0)
   if (!molder) return 0
-  const base = shiftEquivalents(entry) * (Number(molder.shiftRate) || 0)
+  let base
+  if (payModeOf(entry, molder) === 'piece') {
+    const pieces = (entry?.items || []).reduce((s, it) => s + (Number(it.pieces) || 0), 0)
+    const rate = Number(entry?.pieceRate) > 0 ? Number(entry.pieceRate) : (Number(molder.pieceRate) || 0)
+    base = pieces * rate
+  } else {
+    base = shiftEquivalents(entry) * (Number(molder.shiftRate) || 0)
+  }
   const withGst = molder.gst ? base * (1 + (Number(molder.gstPct) || 0) / 100) : base
   return round2(withGst)
 }

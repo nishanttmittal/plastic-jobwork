@@ -59,6 +59,12 @@ export function nextLotNo(data) {
   return `LOT-${String(n).padStart(2, '0')}`
 }
 
+/** Is this lot's hisab finalized (locked)? lotLocks = [{ lotNo, finalizedAt, by }]. */
+export function isLotFinalized(lotNo, lotLocks) {
+  if (!lotNo) return false
+  return (lotLocks || []).some(l => l.lotNo === lotNo)
+}
+
 /** Lot numbers already used by a given molder (for the production/return picker). */
 export function lotsForMolder(molderId, data) {
   return lotList(data).filter(l => l.molderId === molderId).map(l => l.lotNo)

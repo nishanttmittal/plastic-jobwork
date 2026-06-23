@@ -7,10 +7,11 @@ import { usePlastic } from '../PlasticContext'
 import { Button, Card, FieldLabel, Select } from '../../../core/ui'
 import { fmtDate, fmtNum } from '../../../core/utils/format'
 import { ADMIN_PASSWORD, OWNER_EMAILS } from '../config'
+import { isLotFinalized } from '../logic/lot'
 
 export default function Admin() {
   const ctx = usePlastic()
-  const { production, issues, returns, purchases, payments, logs, masters, log } = ctx
+  const { production, issues, returns, purchases, payments, logs, masters, log, lotLocks } = ctx
   const [ok, setOk] = useState(false)
   const [pw, setPw] = useState('')
 
@@ -69,6 +70,8 @@ export default function Admin() {
   }
 
   const voidEntry = (id) => {
+    const e = production.list.find(x => x.id === id)
+    if (isLotFinalized(e?.lotNo, lotLocks)) { alert(`🔒 ${e.lotNo} is finalized — reopen it in Lot Report first.`); return }
     const reason = prompt('Reason for voiding this entry?'); if (reason == null) return
     production.update(id, { voided: true, voidReason: reason })
     log('VOID', `Voided ${id}: ${reason}`, 'admin')

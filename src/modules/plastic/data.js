@@ -46,3 +46,7 @@ export const productsStore    = createSingleton(KEYS.products,     SEED_PRODUCTS
 
 /* Entry-number counter. */
 export const counterStore = createSingleton(KEYS.counter, 0)
+
+/* Finalized lots — list of { lotNo, finalizedAt, by }. A lot here is locked
+ * (its entries can't be edited/voided) until reopened. */
+export const lotLocksStore = createSingleton(KEYS.lotLocks, [])

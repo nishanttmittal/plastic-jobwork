@@ -96,7 +96,7 @@ function Molders() {
   const del = (id) => setMolders(molders.filter(x => x.id !== id))
   const add = () => {
     if (!name.trim()) return
-    setMolders([...molders, { id: makeId('mld'), name: name.trim(), shiftRate: Number(rate) || 0, gst: false, gstPct: 12 }])
+    setMolders([...molders, { id: makeId('mld'), name: name.trim(), shiftRate: Number(rate) || 0, gst: false, gstPct: 12, payMode: 'time', pieceRate: 0 }])
     setName(''); setRate('')
   }
   return (
@@ -110,10 +110,25 @@ function Molders() {
             <button onClick={() => del(x.id)} className="text-red-500 text-lg px-1">🗑</button>
           </div>
           <div className="flex gap-2 items-center text-sm">
+            <span className="text-slate-500 w-24">Pay by</span>
+            <select value={x.payMode || 'time'} onChange={e => patch(x.id, { payMode: e.target.value })}
+              className="flex-1 border-2 border-slate-200 rounded-xl px-3 py-2 text-sm">
+              <option value="time">Time (shift / hour)</option>
+              <option value="piece">Per piece</option>
+            </select>
+          </div>
+          <div className="flex gap-2 items-center text-sm">
             <span className="text-slate-500 w-24">Shift rate ₹</span>
             <input type="number" value={x.shiftRate} onChange={e => patch(x.id, { shiftRate: Number(e.target.value) || 0 })}
               className="w-28 border-2 border-slate-200 rounded-xl px-3 py-2 font-mono text-right" />
           </div>
+          {x.payMode === 'piece' && (
+            <div className="flex gap-2 items-center text-sm">
+              <span className="text-slate-500 w-24">Piece rate ₹</span>
+              <input type="number" value={x.pieceRate ?? 0} onChange={e => patch(x.id, { pieceRate: Number(e.target.value) || 0 })}
+                className="w-28 border-2 border-slate-200 rounded-xl px-3 py-2 font-mono text-right" />
+            </div>
+          )}
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={!!x.gst} onChange={e => patch(x.id, { gst: e.target.checked })} />
             <span className="text-slate-600">Bills GST</span>
