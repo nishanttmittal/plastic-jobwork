@@ -71,6 +71,12 @@ export const MACHINE_ECONOMICS = {
   outsourcePerPiece: 1.55,
 }
 
+/** One machine's running capacity, for the machine-load / buy-signal view. */
+export const MACHINE_CAPACITY = {
+  workingDays: 26,    // run days per month
+  hoursPerShift: 12,  // a shift = 12 hours (owner-confirmed)
+}
+
 /** Storage keys owned by this module (local mode). */
 export const KEYS = {
   production:  'plw_production',
