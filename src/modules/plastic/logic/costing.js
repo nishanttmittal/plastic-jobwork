@@ -46,10 +46,19 @@ export function productMaterialCost(product, masters) {
   }
 }
 
-/** Job-work cost for an entry = shifts × molder shift-rate (+GST if billed). */
+/**
+ * Shift-equivalents charged for an entry. If actual `hours` are recorded, pay
+ * is pro-rata on a 12-hr shift (hours ÷ 12); otherwise whole `shifts`.
+ */
+export function shiftEquivalents(entry) {
+  const hours = Number(entry?.hours) || 0
+  return hours > 0 ? hours / 12 : (Number(entry?.shifts) || 0)
+}
+
+/** Job-work cost for an entry = shift-equivalents × molder shift-rate (+GST). */
 export function jobWorkTotal(entry, molder) {
   if (!molder) return 0
-  const base = (Number(entry.shifts) || 0) * (Number(molder.shiftRate) || 0)
+  const base = shiftEquivalents(entry) * (Number(molder.shiftRate) || 0)
   const withGst = molder.gst ? base * (1 + (Number(molder.gstPct) || 0) / 100) : base
   return round2(withGst)
 }

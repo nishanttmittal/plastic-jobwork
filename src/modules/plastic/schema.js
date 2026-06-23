@@ -26,6 +26,9 @@ export const productionSchema = [
   // lot it was made from, for the per-lot reconciliation report. '' = unassigned.
   field({ name: 'lotNo',       label: 'Lot',        type: 'text',   default: '' }),
   field({ name: 'shifts',      label: 'Shifts',     type: 'number', default: 1, required: true }),
+  // Actual hours the machine ran this entry. When > 0, job-work is charged
+  // pro-rata (hours ÷ 12 × shift-rate) instead of by whole shifts. 0 = use shifts.
+  field({ name: 'hours',       label: 'Hours run',  type: 'number', default: 0 }),
   // Machine's shot counter reading for this run — pieces = shots × cavities is
   // the objective output the machine itself logs (0 = not recorded).
   field({ name: 'machineShots', label: 'Machine shots', type: 'number', default: 0 }),

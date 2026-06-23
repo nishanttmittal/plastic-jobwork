@@ -7,7 +7,7 @@
  */
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
-import { byId, jobWorkTotal, round2 } from './costing'
+import { byId, jobWorkTotal, round2, shiftEquivalents } from './costing'
 import { fmtDate, fmtNum } from '../../../core/utils/format'
 
 const active = (rows) => (rows || []).filter(r => !r.voided)
@@ -29,7 +29,7 @@ export function molderHisab(molderId, masters, data) {
     molder, dues, advances, payments, paid,
     balance: round2(dues - paid),
     entryCount: entries.length,
-    shifts: entries.reduce((s, e) => s + (Number(e.shifts) || 0), 0),
+    shifts: round2(entries.reduce((s, e) => s + shiftEquivalents(e), 0)),
   }
 }
 
@@ -51,7 +51,7 @@ export function buildHisabPdf(molderId, masters, data, opts = {}) {
   const entries = active(data.production).filter(p => p.molderId === molderId)
   const rows = entries.map(e => {
     const pcs = (e.items || []).reduce((s, it) => s + (Number(it.pieces) || 0), 0)
-    return [e.entryNo, fmtDate(e.date), String(e.shifts || 0), String(pcs), `Rs ${fmtNum(jobWorkTotal(e, molder))}`]
+    return [e.entryNo, fmtDate(e.date), String(round2(shiftEquivalents(e))), String(pcs), `Rs ${fmtNum(jobWorkTotal(e, molder))}`]
   })
   autoTable(doc, {
     startY: 36,
