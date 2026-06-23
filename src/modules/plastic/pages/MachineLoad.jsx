@@ -65,6 +65,11 @@ export default function MachineLoad() {
         <FieldLabel>In-house vs outsource (conversion cost / piece)</FieldLabel>
         <Row label="Outsource now" val={m.economics.outsourcePerPiece != null ? `₹${fmtNum(m.economics.outsourcePerPiece)}` : '—'} />
         <Row label="In-house (if you buy)" val={m.economics.inhousePerPiece != null ? `₹${fmtNum(m.economics.inhousePerPiece)}` : '—'} strong />
+        <div className="pt-1 border-t text-xs text-slate-500 space-y-0.5">
+          <div className="flex justify-between"><span>Fixed/month (operator+rent+depr+maint)</span><span className="font-mono">₹{fmtNum(m.economics.monthlyFixed)}</span></div>
+          <div className="flex justify-between"><span>Electricity/month (~{fmtNum(m.economics.avgKw)} kW × {fmtNum(m.monthly.hours)} hr)</span><span className="font-mono">₹{fmtNum(m.economics.monthlyElectricity)}</span></div>
+          <div className="flex justify-between font-semibold text-slate-600"><span>Total in-house/month</span><span className="font-mono">₹{fmtNum(m.economics.monthlyTotal)}</span></div>
+        </div>
         {m.economics.savingPerPiece != null && (
           <Row label="Saving / piece" val={`₹${fmtNum(m.economics.savingPerPiece)}`} />
         )}

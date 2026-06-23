@@ -61,12 +61,18 @@ export const RECON_TOLERANCE_KG = 2
  * Owner figures, 2026-06-16. Editable here. All ₹.
  */
 export const MACHINE_ECONOMICS = {
-  machineCost: 2500000,   // ₹25,00,000 capital for a 180-ton machine
+  machineCost: 2500000,   // ₹25,00,000 capital (owner)
   lifeYears: 10,          // straight-line depreciation
-  monthlyOperator: 30000,
-  monthlyRent: 15000,
-  monthlyElectricity: 40000,
+  monthlyOperator: 40000, // owner
+  monthlyRent: 30000,     // owner
   monthlyMaintenance: 4000,
+  // Electricity is VARIABLE — it scales with machine running hours, not flat.
+  motorKw: 28,            // servo motor rating (owner)
+  chillerKw: 5,           // chiller — ESTIMATE, confirm
+  loadFactor: 0.5,        // avg draw vs rated for a servo machine — ESTIMATE, confirm
+  elecRatePerKwh: 8,      // ₹/unit industrial — ESTIMATE, confirm
+  // Flat fallback used by the older Dashboard indicator only.
+  monthlyElectricity: 47000,
   // Outsource conversion cost (job-work) per piece, for comparison.
   outsourcePerPiece: 1.55,
 }
