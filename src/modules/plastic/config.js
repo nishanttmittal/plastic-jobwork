@@ -68,11 +68,11 @@ export const MACHINE_ECONOMICS = {
   monthlyMaintenance: 4000,
   // Electricity is VARIABLE — it scales with machine running hours, not flat.
   motorKw: 28,            // servo motor rating (owner)
-  chillerKw: 5,           // chiller — ESTIMATE, confirm
-  loadFactor: 0.5,        // avg draw vs rated for a servo machine — ESTIMATE, confirm
-  elecRatePerKwh: 8,      // ₹/unit industrial — ESTIMATE, confirm
+  chillerKw: 5,           // chiller (owner)
+  loadFactor: 0.5,        // avg draw vs rated for a servo machine (owner)
+  elecRatePerKwh: 14,     // ₹/unit (owner)
   // Flat fallback used by the older Dashboard indicator only.
-  monthlyElectricity: 47000,
+  monthlyElectricity: 83000,
   // Outsource conversion cost (job-work) per piece, for comparison.
   outsourcePerPiece: 1.55,
 }
