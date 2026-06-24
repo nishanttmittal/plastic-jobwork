@@ -44,6 +44,7 @@ export default function ReturnMaterial() {
   const save = () => {
     if (!canSave) { show('Enter a quantity returned', 2500); return }
     if (isLotFinalized(lotNo, lotLocks)) { show('🔒 That lot is finalized — reopen it first', 3000); return }
+    if (insertId && !(nutWeightG > 0)) { show("Set this nut's weight (g each) in Masters → Nuts first", 3500); return }
     if (insertId && !(Number(nutKg) > 0)) { show('⚖️ Nut weight (kg) is required when nuts come back', 3000); return }
     returns.insert({
       date, molderId, lotNo,

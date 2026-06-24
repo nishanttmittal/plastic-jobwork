@@ -117,7 +117,7 @@ export const SEED_MASTERBATCH = [
 /** Inserts / nuts the owner supplies — rate is ₹ each; weightG = grams each
  *  (for the weight reconciliation / nut-count cross-check; 0 = skip checks). */
 export const SEED_INSERTS = [
-  { id: 'nut_a', name: 'Nut A', rate: 1.5, weightG: 0 },
+  { id: 'nut_a', name: 'Nut A', rate: 1.5, weightG: 8.3 },
 ]
 
 /**
