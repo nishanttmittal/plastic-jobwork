@@ -13,6 +13,7 @@ import Moulders from './pages/Moulders'
 import Costing from './pages/Costing'
 import More from './pages/More'
 import Dashboard from './pages/Dashboard'   // detailed 15-day report (under More)
+import MaterialLog from './pages/MaterialLog'
 import Entries from './pages/Entries'
 import LotReport from './pages/LotReport'
 import MachineLoad from './pages/MachineLoad'
@@ -26,18 +27,20 @@ export const plasticModule = {
   icon: '🧩',
   Provider: PlasticProvider,
   pages: [
-    // Primary — bottom nav (the four daily jobs + More)
-    { key: 'home',     title: 'Home',     icon: '🏠', nav: true, roles: ['manager', 'owner'], Component: Home },
+    // Primary — bottom nav. Home stays first so OWNER lands on Home; MANAGER
+    // (no Home access) lands on Record. MANAGER sees ONLY: Record + Material + More.
+    { key: 'home',     title: 'Home',     icon: '🏠', nav: true, roles: ['owner'], Component: Home },
     { key: 'record',   title: 'Record',   icon: '➕', nav: true, roles: ['manager', 'owner'], Component: Record },
-    { key: 'moulders', title: 'Moulders', icon: '👥', nav: true, roles: ['manager', 'owner'], Component: Moulders },
+    { key: 'material', title: 'Material',  icon: '📦', nav: true, roles: ['manager', 'owner'], Component: MaterialLog },
+    { key: 'moulders', title: 'Moulders', icon: '👥', nav: true, roles: ['owner'], Component: Moulders },
     { key: 'costing',  title: 'Costing',  icon: '🏷️', nav: true, roles: ['owner'], Component: Costing },
     { key: 'more',     title: 'More',     icon: '☰', nav: true, roles: ['manager', 'owner'], Component: More },
-    // Secondary — opened from More
+    // Secondary — opened from More (owner only).
     { key: 'stock',   title: 'Stock',          icon: '📦', desc: 'Raw material, purchases, prices', roles: ['owner'], Component: Stock },
     { key: 'lotreport', title: 'Lot Report',   icon: '🧾', desc: 'Per-lot sent vs received + cost/pc + PDF', roles: ['owner'], Component: LotReport },
     { key: 'machine',   title: 'Machine Load', icon: '🏭', desc: 'Buy-a-machine signal: capacity & break-even', roles: ['owner'], Component: MachineLoad },
-    { key: 'report',  title: 'Report',         icon: '📊', desc: '15-day material & rejections', roles: ['manager', 'owner'], Component: Dashboard },
-    { key: 'entries', title: 'Entries',        icon: '📜', desc: 'Every entry · void',           roles: ['manager', 'owner'], Component: Entries },
+    { key: 'report',  title: 'Report',         icon: '📊', desc: '15-day material & rejections', roles: ['owner'], Component: Dashboard },
+    { key: 'entries', title: 'Entries',        icon: '📜', desc: 'Every entry · void',           roles: ['owner'], Component: Entries },
     { key: 'masters', title: 'Masters & Rates', icon: '🗂️', desc: 'Compounds, nuts, molders, products', roles: ['owner'], Component: Masters },
     { key: 'admin',   title: 'Admin',          icon: '⚙️', desc: 'Backup, logs, void & reset',   roles: ['owner'], Component: Admin },
   ],
