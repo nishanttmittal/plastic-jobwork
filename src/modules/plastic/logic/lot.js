@@ -126,6 +126,16 @@ export function lotReconciliation(lotNo, masters, data) {
   const lossPct = compoundKg > 0 ? round2((Math.max(0, balanceKg) / compoundKg) * 100) : 0
   const yieldPct = compoundKg > 0 ? round2((plasticInProductsKg / compoundKg) * 100) : 0
 
+  // Pending pieces = expected from the compound sent − produced so far.
+  let expectedPieces = 0
+  for (const i of issues) {
+    const p = byId(products, i.productId)
+    const g = num(p?.gPerPiece)
+    if (g > 0) expectedPieces += (num(i.compoundKg) * 1000) / g
+  }
+  expectedPieces = Math.round(expectedPieces)
+  const pendingPieces = Math.max(0, expectedPieces - goodPieces)
+
   const jobWork = round2(prod.reduce((s, e) => s + jobWorkTotal(e, molder), 0))
   const cycleSec = num(byId(products, prod.find(p => (p.items || [])[0])?.items?.[0]?.productId)?.cycleSec)
   const efficiency = runEfficiency(machineShots, hoursRun, cycleSec)
@@ -146,6 +156,7 @@ export function lotReconciliation(lotNo, masters, data) {
     efficiency,
     returned: { compoundKg: returnedCompoundKg, regrindKg: returnedRegrindKg, nuts: returnedNuts },
     regrindKg, accountedKg, balanceKg, lossPct, yieldPct,
+    expectedPieces, pendingPieces,
     nutBalance: nutsSent - nutsUsed - returnedNuts,
     jobWork,
     rates: { fullLoss: rateFullLoss, regrind: rateRegrind, compoundFullLoss, compoundNet, nutPerPiece, jobWorkPerPiece },
