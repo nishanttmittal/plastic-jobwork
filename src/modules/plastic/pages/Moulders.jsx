@@ -88,7 +88,7 @@ function MolderDetail({ molderId, owner, onBack }) {
     log('PAYMENT', `${molder?.name || molderId} · ${kind} ₹${fmtNum(amount)}`)
     show('✅ Saved', 1500); setAmount('')
   }
-  const sharePdf = () => buildHisabPdf(molderId, masters, moneyData).save(`Hisab-${(molder?.name || 'molder').replace(/\s+/g, '_')}.pdf`)
+  const sharePdf = async () => (await buildHisabPdf(molderId, masters, moneyData)).save(`Hisab-${(molder?.name || 'molder').replace(/\s+/g, '_')}.pdf`)
 
   return (
     <div className="max-w-lg mx-auto p-4 space-y-4">

@@ -5,8 +5,6 @@
  *   Paid     = Σ payments + advances given to the molder
  *   Balance  = Dues − Paid   (positive = we still owe the molder)
  */
-import jsPDF from 'jspdf'
-import autoTable from 'jspdf-autotable'
 import { byId, jobWorkTotal, round2, shiftEquivalents } from './costing'
 import { fmtDate, fmtNum } from '../../../core/utils/format'
 
@@ -34,7 +32,10 @@ export function molderHisab(molderId, masters, data) {
 }
 
 /** Build a shareable Hisab PDF (returns the jsPDF doc). */
-export function buildHisabPdf(molderId, masters, data, opts = {}) {
+// Heavy PDF libs are loaded on demand (only when an export is triggered) so they
+// stay out of the initial bundle — keeps first load fast.
+export async function buildHisabPdf(molderId, masters, data, opts = {}) {
+  const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([import('jspdf'), import('jspdf-autotable')])
   const h = molderHisab(molderId, masters, data)
   const molder = h.molder || { name: '(molder)' }
   const doc = new jsPDF()

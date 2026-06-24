@@ -2,12 +2,12 @@
  * Lot reconciliation PDF — a one-page "raw material sent vs received" report
  * for one lot, shareable on WhatsApp. Mirrors the Hisab PDF style.
  */
-import jsPDF from 'jspdf'
-import autoTable from 'jspdf-autotable'
 import { fmtDate, fmtNum } from '../../../core/utils/format'
 import { lotReconciliation } from './lot'
 
-export function buildLotPdf(lotNo, masters, data) {
+// Heavy PDF libs load on demand (only when exporting) to keep the initial bundle small.
+export async function buildLotPdf(lotNo, masters, data) {
+  const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([import('jspdf'), import('jspdf-autotable')])
   const r = lotReconciliation(lotNo, masters, data)
   const doc = new jsPDF()
   const W = doc.internal.pageSize.getWidth()

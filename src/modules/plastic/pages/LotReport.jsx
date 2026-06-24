@@ -21,7 +21,7 @@ export default function LotReport() {
   const [lotNo, setLotNo] = useState(lots[0]?.lotNo || '')
   const r = useMemo(() => (lotNo ? lotReconciliation(lotNo, masters, data) : null), [lotNo, masters, data])
 
-  const exportPdf = () => buildLotPdf(lotNo, masters, data).save(`Lot-${lotNo}.pdf`)
+  const exportPdf = async () => (await buildLotPdf(lotNo, masters, data)).save(`Lot-${lotNo}.pdf`)
 
   const finalized = isLotFinalized(lotNo, lotLocks)
   const finalize = () => {
