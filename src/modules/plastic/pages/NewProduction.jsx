@@ -69,17 +69,22 @@ export default function NewProduction({ owner }) {
 
   const costing = useMemo(() => entryCosting(draft, masters), [draft, masters])
 
-  // Accuracy cross-check: expected finished weight vs entered.
-  const expectedKg = useMemo(() => {
-    let g = 0
+  // Incoming cross-check: convert the WEIGHT entered into a piece count and
+  // compare it to the pieces COUNTED. Flag if they disagree by > 10 pieces.
+  const weightCheck = useMemo(() => {
+    let expectedKg = 0, counted = 0
     for (const it of draft.items) {
       const p = byId(products, it.productId)
-      g += (Number(it.pieces) || 0) * (Number(p?.finishedPieceG) || 0)
+      expectedKg += (Number(it.pieces) || 0) * (Number(p?.finishedPieceG) || 0)
+      counted += (Number(it.pieces) || 0) + (Number(it.rejects) || 0)
     }
-    return g / 1000
-  }, [draft.items, products])
-  const weightGap = finishedKg && expectedKg ? (Number(finishedKg) - expectedKg) : 0
-  const weightOff = expectedKg > 0 && finishedKg && Math.abs(weightGap) > expectedKg * 0.05
+    expectedKg = expectedKg / 1000
+    const kg = Number(finishedKg) || 0
+    if (kg <= 0 || expectedKg <= 0 || counted <= 0) return null
+    const impliedByWeight = Math.round(kg * counted / expectedKg)   // weight → pieces
+    const gap = impliedByWeight - counted
+    return { counted, impliedByWeight, gap, off: Math.abs(gap) > 10 }
+  }, [draft.items, finishedKg, products])
 
   const setItem = (i, patch) => setItems(items.map((it, j) => j === i ? { ...it, ...patch } : it))
   const addItem = () => setItems([...items, { productId: products[0]?.id || '', pieces: '', rejectRows: [] }])
@@ -102,6 +107,8 @@ export default function NewProduction({ owner }) {
       const rate = Number(pieceRate) > 0 ? Number(pieceRate) : (Number(byId(molders, molderId)?.pieceRate) || 0)
       if (rate <= 0) { show('Set a piece rate (it is ₹0) before saving', 3000); return }
     }
+    if (weightCheck?.off && !window.confirm(
+      `⚠️ Weight says ~${weightCheck.impliedByWeight} pcs but you counted ${weightCheck.counted} — off by more than 10.\n\nSave anyway?`)) return
     createEntry(draft)
     show('✅ Production saved', 2000)
     setItems([{ productId: products[0]?.id || '', pieces: '', rejectRows: [] }])
@@ -271,14 +278,15 @@ export default function NewProduction({ owner }) {
             <NumberInput value={burntKg} onChange={e => setBurntKg(e.target.value)} placeholder="0" />
           </div>
           <div>
-            <span className="text-xs text-slate-500">Finished weight (check)</span>
+            <span className="text-xs text-slate-500">Incoming by weight (kg)</span>
             <NumberInput value={finishedKg} onChange={e => setFinishedKg(e.target.value)} placeholder="0" />
           </div>
         </div>
-        {weightOff && (
-          <div className="bg-amber-50 text-amber-800 rounded-xl p-3 text-sm font-semibold">
-            ⚠️ Weight check: entered {fmtNum(finishedKg)} kg vs expected ~{expectedKg.toFixed(1)} kg
-            ({weightGap > 0 ? '+' : ''}{weightGap.toFixed(1)} kg). Re-verify pieces/weighing.
+        {weightCheck && (
+          <div className={`rounded-xl p-3 text-sm font-semibold ${weightCheck.off ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>
+            {weightCheck.off ? '⚠️' : '✓'} By weight ≈ <b>{fmtNum(weightCheck.impliedByWeight)}</b> pcs vs {fmtNum(weightCheck.counted)} counted
+            {' '}— {weightCheck.gap === 0 ? 'exact match' : `${weightCheck.gap > 0 ? 'weight is ' + fmtNum(weightCheck.gap) + ' more' : 'short by ' + fmtNum(-weightCheck.gap)}`}
+            {weightCheck.off ? ' (>10 pcs — re-check count/weight before saving)' : ''}
           </div>
         )}
       </Card>
