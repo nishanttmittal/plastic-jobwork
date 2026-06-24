@@ -4,7 +4,7 @@
  * Details (assumptions, breakdown, reverse calc) are tucked into expanders so
  * the headline number stays front and centre. Owner-only (shows money).
  */
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { usePlastic } from '../PlasticContext'
 import { Card, FieldLabel, Select, NumberInput } from '../../../core/ui'
 import { fmtNum } from '../../../core/utils/format'
@@ -25,10 +25,13 @@ export default function Costing() {
   const [includeScrap, setIncludeScrap] = useState(false)
   const [scrapPct, setScrapPct] = useState('5')
   const [shotsPerHr, setShotsPerHr] = useState(String(product?.shotsPerHour || 70))
-  useEffect(() => {
-    const p = (masters.products || []).find(x => x.id === productId)
-    setShotsPerHr(String(p?.shotsPerHour || 70))
-  }, [productId]) // eslint-disable-line react-hooks/exhaustive-deps
+  // When the selected product changes, reset shots/hr to that product's default
+  // (React's "adjust state during render" pattern — no effect, no cascading render).
+  const [prevProductId, setPrevProductId] = useState(productId)
+  if (productId !== prevProductId) {
+    setPrevProductId(productId)
+    setShotsPerHr(String(product?.shotsPerHour || 70))
+  }
   const [shiftHrs, setShiftHrs] = useState('12')
   const [regrindPct, setRegrindPct] = useState('0')
   const [limitRegrind, setLimitRegrind] = useState(true)

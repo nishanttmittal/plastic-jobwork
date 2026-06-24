@@ -12,6 +12,7 @@ import { usePlastic } from '../modules/plastic/PlasticContext'
 import { OWNER_EMAILS } from '../modules/plastic/config'
 
 /** 'owner' | 'manager' | null for an email against the users list. */
+// eslint-disable-next-line react-refresh/only-export-components -- helper co-located with the gate; dev-only fast-refresh hint
 export function resolveRole(email, users) {
   if (!email) return null
   const e = email.toLowerCase()

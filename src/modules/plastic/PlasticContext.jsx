@@ -99,6 +99,7 @@ function LocalPlasticProvider({ children }) {
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- hook co-located with its provider; dev-only fast-refresh hint
 export function usePlastic() {
   const v = useContext(Ctx)
   if (!v) throw new Error('usePlastic must be used inside <PlasticProvider>')

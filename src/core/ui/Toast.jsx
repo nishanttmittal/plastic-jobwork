@@ -4,6 +4,7 @@
  */
 import { useState, useCallback } from 'react'
 
+// eslint-disable-next-line react-refresh/only-export-components -- hook co-located with its Toast component; dev-only fast-refresh hint
 export function useToast() {
   const [msg, setMsg] = useState('')
   const show = useCallback((m, ms = 2500) => {
