@@ -98,10 +98,11 @@ export default function NewProduction({ owner }) {
   const removeRejectRow = (i, k) => setItem(i, { rejectRows: (items[i].rejectRows || []).filter((_, j) => j !== k) })
 
   const totalPieces = costing.totalGoodPieces
-  const canSave = molderId && totalPieces > 0
+  const canSave = molderId && totalPieces > 0 && Number(finishedKg) > 0
 
   const save = () => {
-    if (!canSave) { show('Pick a molder and enter pieces', 2500); return }
+    if (!molderId || totalPieces <= 0) { show('Pick a molder and enter pieces', 2500); return }
+    if (!(Number(finishedKg) > 0)) { show('⚖️ Incoming weight (kg) is required to save', 3000); return }
     if (isLotFinalized(lotNo, lotLocks)) { show('🔒 That lot is finalized — reopen it first', 3000); return }
     if (effectiveMode === 'piece') {
       const rate = Number(pieceRate) > 0 ? Number(pieceRate) : (Number(byId(molders, molderId)?.pieceRate) || 0)
@@ -278,7 +279,7 @@ export default function NewProduction({ owner }) {
             <NumberInput value={burntKg} onChange={e => setBurntKg(e.target.value)} placeholder="0" />
           </div>
           <div>
-            <span className="text-xs text-slate-500">Incoming by weight (kg)</span>
+            <span className="text-xs font-semibold text-red-600">Incoming by weight (kg) — required *</span>
             <NumberInput value={finishedKg} onChange={e => setFinishedKg(e.target.value)} placeholder="0" />
           </div>
         </div>
