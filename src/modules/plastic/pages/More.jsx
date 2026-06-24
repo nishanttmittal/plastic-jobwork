@@ -3,7 +3,10 @@
  * Entries, Masters, Admin) plus sign-out, so the main nav stays focused on the
  * four daily jobs.
  */
+/* global __APP_VERSION__ */
 import { Card } from '../../../core/ui'
+
+const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev'
 
 export default function More({ pages = [], onOpen, onSignOut, userEmail }) {
   const secondary = pages.filter(p => !p.nav)
@@ -29,6 +32,8 @@ export default function More({ pages = [], onOpen, onSignOut, userEmail }) {
           <button onClick={onSignOut} className="bg-slate-900 text-white rounded-lg px-4 py-2 text-sm font-bold shrink-0">Sign out</button>
         </Card>
       )}
+
+      <p className="text-center text-xs text-slate-400">App version {APP_VERSION} · updates automatically</p>
     </div>
   )
 }

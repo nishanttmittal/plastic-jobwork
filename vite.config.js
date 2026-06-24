@@ -3,13 +3,19 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
+// Build stamp (IST) — shown in-app (More) so it's obvious whether a phone is on
+// the latest version. Generated fresh on every build.
+const BUILD_ID = new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().slice(0, 16).replace('T', ' ') + ' IST'
+
 export default defineConfig({
   base: '/plastic-jobwork/',
+  define: { __APP_VERSION__: JSON.stringify(BUILD_ID) },
   plugins: [
     react(),
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
+      injectRegister: false, // we register manually in main.jsx to add periodic update checks
       scope: '/plastic-jobwork/',
       includeAssets: ['apple-touch-icon.png'],
       workbox: {
