@@ -25,8 +25,11 @@ export default function ReturnMaterial() {
   const [compoundKg, setCompoundKg] = useState('')
   const [regrindKg, setRegrindKg] = useState('')
   const [insertId, setInsertId] = useState('')
-  const [nutQty, setNutQty] = useState('')
+  const [nutKg, setNutKg] = useState('')
   const [note, setNote] = useState('')
+
+  const nutWeightG = Number(byId(inserts, insertId)?.weightG) || 0
+  const derivedNutQty = (Number(nutKg) > 0 && nutWeightG > 0) ? Math.round(Number(nutKg) * 1000 / nutWeightG) : 0
 
   const molderOpts = molders.map(m => ({ value: m.id, label: m.name }))
   const compoundOpts = compounds.map(c => ({ value: c.id, label: `${c.name} · ₹${c.rate}/kg` }))
@@ -36,22 +39,23 @@ export default function ReturnMaterial() {
     ? molderBalance(molderId, { issues: issues.list, production: production.list, returns: returns.list, products: masters.products })
     : null
 
-  const canSave = molderId && ((Number(compoundKg) || 0) > 0 || (Number(regrindKg) || 0) > 0 || (Number(nutQty) || 0) > 0)
+  const canSave = molderId && ((Number(compoundKg) || 0) > 0 || (Number(regrindKg) || 0) > 0 || (Number(nutKg) || 0) > 0)
 
   const save = () => {
     if (!canSave) { show('Enter a quantity returned', 2500); return }
     if (isLotFinalized(lotNo, lotLocks)) { show('🔒 That lot is finalized — reopen it first', 3000); return }
+    if (insertId && !(Number(nutKg) > 0)) { show('⚖️ Nut weight (kg) is required when nuts come back', 3000); return }
     returns.insert({
       date, molderId, lotNo,
       compoundId, compoundKg: Number(compoundKg) || 0,
       regrindKg: Number(regrindKg) || 0,
-      insertId, nutQty: Number(nutQty) || 0,
+      insertId, nutKg: Number(nutKg) || 0, nutQty: derivedNutQty,
       note, voided: false, createdAt: new Date().toISOString(),
     })
     const m = byId(molders, molderId)
-    log('RETURN', `${m?.name || molderId} · ${fmtNum(compoundKg) || 0}kg compound · ${fmtNum(regrindKg) || 0}kg regrind · ${fmtNum(nutQty) || 0} nuts`)
+    log('RETURN', `${m?.name || molderId} · ${fmtNum(compoundKg) || 0}kg compound · ${fmtNum(regrindKg) || 0}kg regrind · ${fmtNum(nutKg) || 0}kg (${fmtNum(derivedNutQty)}) nuts`)
     show('✅ Material received back', 2000)
-    setCompoundKg(''); setRegrindKg(''); setNutQty(''); setNote('')
+    setCompoundKg(''); setRegrindKg(''); setNutKg(''); setNote('')
   }
 
   return (
@@ -93,12 +97,19 @@ export default function ReturnMaterial() {
       </Card>
 
       <Card className="p-4 space-y-3">
-        <FieldLabel>Nuts / Inserts returned (optional)</FieldLabel>
+        <FieldLabel>Nuts received back (by weight)</FieldLabel>
         <Select options={nutOpts} value={insertId} onChange={e => setInsertId(e.target.value)} />
-        <div>
-          <span className="text-xs text-slate-500">Nut quantity</span>
-          <NumberInput value={nutQty} onChange={e => setNutQty(e.target.value)} placeholder="0" className="mt-1" />
-        </div>
+        {insertId && (
+          <div>
+            <span className="text-xs font-semibold text-red-600">Nuts — weight (kg) · required when nuts come back *</span>
+            <NumberInput value={nutKg} onChange={e => setNutKg(e.target.value)} placeholder="0" className="mt-1" />
+            {derivedNutQty > 0 && (
+              <div className="mt-1 bg-teal-50 text-teal-800 rounded-xl px-3 py-2 text-sm font-semibold">
+                ≈ <b>{fmtNum(derivedNutQty)}</b> nuts (at {fmtNum(nutWeightG)} g each)
+              </div>
+            )}
+          </div>
+        )}
       </Card>
 
       {bal && (

@@ -26,8 +26,12 @@ export default function IssueCompound() {
   const [mbId, setMbId] = useState('')
   const [mbKg, setMbKg] = useState('')
   const [insertId, setInsertId] = useState('')
-  const [nutQty, setNutQty] = useState('')
+  const [nutKg, setNutKg] = useState('')
   const [note, setNote] = useState('')
+
+  // Nuts are weighed, not counted: derive the count from weight ÷ nut weight.
+  const nutWeightG = Number(byId(inserts, insertId)?.weightG) || 0
+  const derivedNutQty = (Number(nutKg) > 0 && nutWeightG > 0) ? Math.round(Number(nutKg) * 1000 / nutWeightG) : 0
 
   const molderOpts = molders.map(m => ({ value: m.id, label: m.name }))
   const compoundOpts = compounds.map(c => ({ value: c.id, label: `${c.name} · ₹${c.rate}/kg` }))
@@ -42,22 +46,23 @@ export default function IssueCompound() {
 
   const bal = molderId ? molderBalance(molderId, { issues: issues.list, production: production.list, returns: returns.list, products: masters.products }) : null
 
-  const canSave = molderId && ((Number(compoundKg) || 0) > 0 || (Number(nutQty) || 0) > 0 || (Number(mbKg) || 0) > 0)
+  const canSave = molderId && ((Number(compoundKg) || 0) > 0 || (Number(nutKg) || 0) > 0 || (Number(mbKg) || 0) > 0)
 
   const save = () => {
     if (!canSave) { show('Enter a quantity to issue', 2500); return }
     if (isLotFinalized(lotNo.trim(), lotLocks)) { show('🔒 That lot is finalized — reopen it first', 3000); return }
+    if (insertId && !(Number(nutKg) > 0)) { show('⚖️ Nut weight (kg) is required when supplying nuts', 3000); return }
     issues.insert({
       date, molderId, lotNo: lotNo.trim(),
       compoundId, compoundKg: Number(compoundKg) || 0, productId,
       mbId, mbKg: Number(mbKg) || 0,
-      insertId, nutQty: Number(nutQty) || 0,
+      insertId, nutKg: Number(nutKg) || 0, nutQty: derivedNutQty,
       note, voided: false, createdAt: new Date().toISOString(),
     })
     const m = byId(molders, molderId)
-    log('ISSUE', `${m?.name || molderId} · ${fmtNum(compoundKg) || 0}kg · ${fmtNum(nutQty) || 0} nuts`)
+    log('ISSUE', `${m?.name || molderId} · ${fmtNum(compoundKg) || 0}kg · ${fmtNum(nutKg) || 0}kg (${fmtNum(derivedNutQty)}) nuts`)
     show('✅ Material issued', 2000)
-    setCompoundKg(''); setMbKg(''); setNutQty(''); setNote('')
+    setCompoundKg(''); setMbKg(''); setNutKg(''); setNote('')
   }
 
   return (
@@ -111,12 +116,19 @@ export default function IssueCompound() {
       </Card>
 
       <Card className="p-4 space-y-3">
-        <FieldLabel>Nuts / Inserts (optional)</FieldLabel>
+        <FieldLabel>Nuts supplied (by weight)</FieldLabel>
         <Select options={nutOpts} value={insertId} onChange={e => setInsertId(e.target.value)} />
-        <div>
-          <span className="text-xs text-slate-500">Nut quantity</span>
-          <NumberInput value={nutQty} onChange={e => setNutQty(e.target.value)} placeholder="0" className="mt-1" />
-        </div>
+        {insertId && (
+          <div>
+            <span className="text-xs font-semibold text-red-600">Nuts — weight (kg) · required when supplying nuts *</span>
+            <NumberInput value={nutKg} onChange={e => setNutKg(e.target.value)} placeholder="0" className="mt-1" />
+            {derivedNutQty > 0 && (
+              <div className="mt-1 bg-teal-50 text-teal-800 rounded-xl px-3 py-2 text-sm font-semibold">
+                ≈ <b>{fmtNum(derivedNutQty)}</b> nuts (at {fmtNum(nutWeightG)} g each)
+              </div>
+            )}
+          </div>
+        )}
       </Card>
 
       {bal && (
