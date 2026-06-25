@@ -105,8 +105,8 @@ export const KEYS = {
 
 /** Compounds — rate is ₹ per kg. */
 export const SEED_COMPOUNDS = [
-  { id: 'cmp_pp', name: 'PP (Polypropylene)', rate: 80 },
-  { id: 'cmp_pp_knob', name: 'PP (knob)', rate: 85 },
+  { id: 'cmp_pp', name: 'PP (Polypropylene) kuppa', rate: 80, reorder: 500 },
+  { id: 'cmp_pp_knob', name: 'PP (knob)', rate: 85, reorder: 500 },
 ]
 
 /** Colour masterbatch / additives — rate is ₹ per kg, dosed as % of compound. */
@@ -117,7 +117,7 @@ export const SEED_MASTERBATCH = [
 /** Inserts / nuts the owner supplies — rate is ₹ each; weightG = grams each
  *  (for the weight reconciliation / nut-count cross-check; 0 = skip checks). */
 export const SEED_INSERTS = [
-  { id: 'nut_a', name: 'Nut A', rate: 1.5, weightG: 8.3 },
+  { id: 'nut_a', name: 'Nut kuppa', rate: 1.5, weightG: 8.3, reorder: 25000 },
 ]
 
 /**
@@ -125,7 +125,7 @@ export const SEED_INSERTS = [
  * gst: whether they bill GST on top; gstPct used only when gst is true.
  */
 export const SEED_MOLDERS = [
-  { id: 'mld_1', name: 'Molder 1 (180-ton)', shiftRate: 5000, gst: false, gstPct: 12, payMode: 'time', pieceRate: 0 },
+  { id: 'mld_1', name: 'Molder JW(180-ton)', shiftRate: 4500, gst: false, gstPct: 12, payMode: 'time', pieceRate: 0 },
 ]
 
 /**
@@ -147,17 +147,19 @@ export const SEED_MOLDERS = [
 export const SEED_PRODUCTS = [
   {
     id: 'prd_cap',
-    name: 'Cap (black)',
+    name: 'Kuppa',
     compoundId: 'cmp_pp',
     gPerPiece: 38.9,    // compound consumed/piece incl. waste — for COST
-    netPartG: 0,        // net plastic in the part — for RECONCILIATION (set after weighing)
-    mbId: 'mb_black',
-    mbPct: 0,            // masterbatch dose PENDING from owner
+    netPartG: 32.5,     // net plastic in the part — for RECONCILIATION (verified)
+    mbId: '',           // natural — no masterbatch
+    mbPct: 0,
     cavities: 4,
     cycleSec: 36,        // rated cycle time (sec) — target for shots/hr efficiency
+    shotsPerHour: 70,
+    runnerGPerShot: 5.1,
     inserts: [{ insertId: 'nut_a', qty: 1 }],
-    finishedPieceG: 46.4, // 185.5g / 4 (incl. nut)
-    note: '185.5g = 4 caps w/ nuts · runner 5.1g/shot · 45 sec cycle',
+    finishedPieceG: 41, // weighed 10pc = 410g (incl. nut)
+    note: 'Mechanism cap (Kuppa) — 1 per mechanism, used across all fitting-app mechanisms. 4 cavities, 1 nut/piece, natural (no MB), ~36s cycle. 4 caps+nuts=185.5g, runner=5.1g/shot, 38.9g/piece incl runner.',
   },
   {
     id: 'prd_knob',
@@ -168,7 +170,7 @@ export const SEED_PRODUCTS = [
     mbId: '',
     mbPct: 0,
     cavities: 4,
-    cycleSec: 73,
+    cycleSec: 66,
     inserts: [],            // no nut
     finishedPieceG: 26.1,   // no nut → finished = net plastic
     note: 'Chair handle/knob. Measured 23-Jun: 4 pcs=104.4g (26.1g/pc), runner 4.6g/shot (~4%, normal).',
