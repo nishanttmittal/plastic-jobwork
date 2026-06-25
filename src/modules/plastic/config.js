@@ -150,7 +150,7 @@ export const SEED_PRODUCTS = [
     name: 'Kuppa',
     compoundId: 'cmp_pp',
     gPerPiece: 38.9,    // compound consumed/piece incl. waste — for COST
-    netPartG: 32.5,     // net plastic in the part — for RECONCILIATION (verified)
+    netPartG: 36.0,     // net plastic in the part — for RECONCILIATION (100pc weigh 2026-06-25; 450kg lot reconciles to 0.2%)
     mbId: '',           // natural — no masterbatch
     mbPct: 0,
     cavities: 4,
@@ -158,7 +158,7 @@ export const SEED_PRODUCTS = [
     shotsPerHour: 70,
     runnerGPerShot: 5.1,
     inserts: [{ insertId: 'nut_a', qty: 1 }],
-    finishedPieceG: 41, // weighed 10pc = 410g (incl. nut)
+    finishedPieceG: 45, // 100pc = 4.5kg → 45.0g (incl. nut); ~36g plastic + ~9g nut
     note: 'Mechanism cap (Kuppa) — 1 per mechanism, used across all fitting-app mechanisms. 4 cavities, 1 nut/piece, natural (no MB), ~36s cycle. 4 caps+nuts=185.5g, runner=5.1g/shot, 38.9g/piece incl runner.',
   },
   {
@@ -166,13 +166,13 @@ export const SEED_PRODUCTS = [
     name: 'Knob',
     compoundId: 'cmp_pp_knob',  // PP @ ₹85/kg
     gPerPiece: 27.25,       // full shot 109g ÷ 4 (compound/pc incl runner) — for COST
-    netPartG: 26.1,         // 4 pcs = 104.4g → 26.1g/pc net plastic — for RECON
+    netPartG: 26.0,         // 100pc = 2.600kg → 26.0g/pc net plastic — for RECON (2026-06-25)
     mbId: '',
     mbPct: 0,
     cavities: 4,
     cycleSec: 66,
     inserts: [],            // no nut
-    finishedPieceG: 26.1,   // no nut → finished = net plastic
+    finishedPieceG: 26.0,   // 100pc = 2.600kg → 26.0g; no nut → finished = net plastic
     note: 'Chair handle/knob. Measured 23-Jun: 4 pcs=104.4g (26.1g/pc), runner 4.6g/shot (~4%, normal).',
   },
   // Add more products via Masters → Products (no code change needed).
