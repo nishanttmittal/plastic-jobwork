@@ -96,17 +96,23 @@ export default function Costing() {
           <Card className="p-5 text-center">
             <div className="text-5xl font-bold text-teal-700">{rupee(c.price)}</div>
             <div className="text-sm text-slate-500 mt-1">
-              per piece · {includeNut ? 'with nut' : 'without nut'}{includeScrap ? ` · +${fmtNum(scrapPct)}% scrap` : ''}
+              per piece · {includeNut ? 'with nut' : 'without nut'}{includeScrap ? ` · +${fmtNum(scrapPct)}% reject markup` : ''}
             </div>
             <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
               <Chip on={includeNut} onClick={() => setIncludeNut(v => !v)}>Include nut</Chip>
-              <Chip on={includeScrap} onClick={() => setIncludeScrap(v => !v)}>Include scrap</Chip>
+              <Chip on={includeScrap} onClick={() => setIncludeScrap(v => !v)}>Reject markup</Chip>
               {includeScrap && (
                 <span className="flex items-center gap-1 text-sm">
-                  <span className="w-14"><NumberInput value={scrapPct} onChange={e => setScrapPct(e.target.value)} className="!py-1 text-center" /></span>%
+                  <span className="w-16"><NumberInput value={scrapPct} onChange={e => setScrapPct(e.target.value)} className="!py-1 text-center" /></span>% reject
                 </span>
               )}
             </div>
+            {includeScrap && (
+              <p className="text-xs text-slate-400 mt-2 max-w-xs mx-auto">
+                Raises the price so your <b>good</b> pieces cover the cost of <b>rejected</b> ones.
+                Enter your typical reject %. (Runner / regrind reuse is separate — see Assumptions below.)
+              </p>
+            )}
           </Card>
 
           {/* Breakdown — always visible */}
@@ -118,7 +124,7 @@ export default function Costing() {
               {c.masterbatch > 0 && <Row label="Masterbatch" val={rupee(c.masterbatch)} />}
               {includeNut && <Row label="Nut / inserts" val={rupee(c.nut)} />}
               <Row label={`Job-work (₹${fmtNum(c.shiftCost)}/shift ÷ ${fmtNum(c.piecesPerShift)} pcs)`} val={rupee(c.jobWork)} />
-              {includeScrap && <Row label={`Scrap loading (${fmtNum(scrapPct)}%)`} val={`× ${(1 / (1 - c.W)).toFixed(3)}`} />}
+              {includeScrap && <Row label={`Reject markup (${fmtNum(scrapPct)}% rejects)`} val={`× ${(1 / (1 - c.W)).toFixed(3)}`} />}
               <div className="border-t pt-1 mt-1"><Row label="Price per piece" val={rupee(c.price)} bold /></div>
             </div>
           </Card>

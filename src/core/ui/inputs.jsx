@@ -10,8 +10,11 @@ export function TextInput({ className = '', ...props }) {
   return <input type="text" className={`${FIELD} ${className}`} {...props} />
 }
 
+// inputMode="decimal" gives the iPhone keypad a decimal point, so rates, kg and
+// prices like 5.70 can actually be typed (inputMode="numeric" showed an
+// integer-only pad). Whole numbers still type fine on this pad.
 export function NumberInput({ className = '', ...props }) {
-  return <input type="number" inputMode="numeric" className={`${FIELD} ${className}`} {...props} />
+  return <input type="number" inputMode="decimal" className={`${FIELD} ${className}`} {...props} />
 }
 
 export function DateInput({ className = '', ...props }) {

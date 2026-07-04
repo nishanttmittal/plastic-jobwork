@@ -10,7 +10,7 @@ import { fmtDate, fmtNum } from '../../../core/utils/format'
 import { lotList, lotReconciliation, isLotFinalized } from '../logic/lot'
 import { jobWorkTotal, byId } from '../logic/costing'
 import { buildLotPdf } from '../logic/lotPdf'
-import { ADMIN_PASSWORD } from '../config'
+import { ADMIN_PASSWORD, rejectReasonLabel } from '../config'
 
 export default function LotReport() {
   const { masters, issues, production, returns, lotLocks, setLotLocks, log } = usePlastic()
@@ -20,6 +20,24 @@ export default function LotReport() {
   const lots = useMemo(() => lotList(data), [data])
   const [lotNo, setLotNo] = useState(lots[0]?.lotNo || '')
   const r = useMemo(() => (lotNo ? lotReconciliation(lotNo, masters, data) : null), [lotNo, masters, data])
+
+  // Reject reasons for THIS lot (QC). Handles both record shapes: new entries
+  // carry rejectRows [{reason,qty}]; old ones a single rejectReason + rejects.
+  // (Folded in from the removed 15-day Report — here it's per-lot, more useful.)
+  const rejReasons = useMemo(() => {
+    const byReason = {}
+    for (const e of production.list.filter(p => !p.voided && (p.lotNo || '') === lotNo)) {
+      for (const it of e.items || []) {
+        const rows = Array.isArray(it.rejectRows) && it.rejectRows.length
+          ? it.rejectRows : [{ reason: it.rejectReason || '', qty: Number(it.rejects) || 0 }]
+        for (const row of rows) {
+          const q = Number(row.qty) || 0
+          if (q > 0) byReason[row.reason || ''] = (byReason[row.reason || ''] || 0) + q
+        }
+      }
+    }
+    return Object.entries(byReason).sort((a, b) => b[1] - a[1])
+  }, [production.list, lotNo])
 
   const exportPdf = async () => (await buildLotPdf(lotNo, masters, data)).save(`Lot-${lotNo}.pdf`)
 
@@ -87,6 +105,22 @@ export default function LotReport() {
             )}
             <Row label="Good pieces" val={`${fmtNum(r.received.goodPieces)} pcs`} strong />
             <Row label="Reject pieces" val={`${fmtNum(r.received.rejectPieces)} pcs`} />
+            {r.received.rejectPieces > 0 && (() => {
+              const total = r.received.goodPieces + r.received.rejectPieces
+              const pct = total > 0 ? (r.received.rejectPieces / total) * 100 : 0
+              return (
+                <div className={`text-sm rounded-xl px-3 py-2 ${pct >= 5 ? 'bg-red-50 text-red-700' : pct >= 2 ? 'bg-amber-50 text-amber-800' : 'bg-slate-50 text-slate-600'}`}>
+                  <div className="font-semibold">Rejections: {pct.toFixed(1)}% ({fmtNum(r.received.rejectPieces)} of {fmtNum(total)})</div>
+                  {rejReasons.length > 0 && (
+                    <div className="mt-1 space-y-0.5">
+                      {rejReasons.map(([key, qty]) => (
+                        <div key={key || 'none'} className="flex justify-between text-xs"><span>{rejectReasonLabel(key)}</span><span className="font-mono">{fmtNum(qty)}</span></div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            })()}
             <Row label="Runner returned" val={`${fmtNum(r.received.runnerKg)} kg`} />
             <Row label="Rejects returned" val={`${fmtNum(r.received.rejectsKg)} kg`} />
             <Row label="Burnt / purge loss" val={`${fmtNum(r.received.burntKg)} kg`} />
